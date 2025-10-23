@@ -2,35 +2,35 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import useAuth from '../hooks/useAuth';
 
-const Header = () => {
+const Header = ({ className = '' }) => {
   const { user, isAuthenticated } = useAuthStore();
   const { handleLogout } = useAuth();
   const navigate = useNavigate();
 
   return (
-    <header className="bg-white shadow-md">
-      <nav className="container mx-auto px-4 py-3">
-        <div className="flex items-center justify-between">
-          <Link to="/" className="text-xl font-bold text-blue-600">
-            MediGestion
+    <header className={`${className}`}>
+      <nav className="h-full px-4">
+        <div className="flex items-center justify-between h-full">
+          <Link to="/" className="flex items-center">
+            <span className="text-xl font-bold text-primary">MediGestion</span>
           </Link>
           
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-6">
             {isAuthenticated ? (
               <div className="flex items-center space-x-4">
                 <Link
                   to="/perfil"
-                  className="text-gray-600 hover:text-blue-600"
+                  className="text-secondary-dark hover:text-primary transition-colors duration-200 text-sm font-medium"
                 >
                   {user?.nombre} {user?.apellido}
                 </Link>
-                <span className="text-gray-300">|</span>
+                <div className="h-4 w-px bg-secondary"></div>
                 <button
                   onClick={() => {
                     handleLogout();
                     navigate('/login');
                   }}
-                  className="text-gray-600 hover:text-blue-600"
+                  className="btn-secondary text-sm"
                 >
                   Cerrar Sesión
                 </button>
@@ -39,13 +39,13 @@ const Header = () => {
               <>
                 <Link
                   to="/login"
-                  className="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium"
+                  className="btn-secondary"
                 >
                   Iniciar Sesión
                 </Link>
                 <Link
                   to="/register"
-                  className="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium"
+                  className="btn-primary"
                 >
                   Registrarse
                 </Link>

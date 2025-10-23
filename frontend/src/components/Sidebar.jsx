@@ -101,8 +101,16 @@ const Sidebar = () => {
   });
 
   return (
-    <div className="h-full bg-white w-64 shadow-md">
-      <nav className="mt-5 px-2">
+    <aside className={`${className} bg-white`}>
+      <nav className="h-full px-3 py-4">
+        <div className="mb-8 px-4">
+          <h2 className="text-sm font-semibold text-secondary-dark uppercase tracking-wider">
+            {userRole === 'admin' ? 'Administración' :
+             userRole === 'profesional' ? 'Panel Profesional' :
+             userRole === 'secretario' ? 'Panel Secretaría' :
+             'Panel Paciente'}
+          </h2>
+        </div>
         <div className="space-y-1">
           {roleMenu.map((item) => {
             const isActive = location.pathname === item.to;
@@ -112,14 +120,14 @@ const Sidebar = () => {
                 to={item.to}
                 className={`${
                   isActive
-                    ? 'bg-blue-50 text-blue-600'
-                    : 'text-gray-600 hover:bg-gray-50'
-                } group flex items-center px-2 py-2 text-sm font-medium rounded-md`}
+                    ? 'bg-primary/10 text-primary border-r-4 border-primary'
+                    : 'text-secondary-dark hover:bg-secondary-light hover:text-primary'
+                } group flex items-center px-4 py-3 text-sm font-medium transition-colors duration-150`}
               >
                 <svg
                   className={`${
-                    isActive ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500'
-                  } mr-3 h-5 w-5`}
+                    isActive ? 'text-primary' : 'text-secondary-dark group-hover:text-primary'
+                  } mr-3 h-5 w-5 transition-colors duration-150`}
                   xmlns="http://www.w3.org/2000/svg"
                   fill="none"
                   viewBox="0 0 24 24"
@@ -138,7 +146,7 @@ const Sidebar = () => {
           })}
         </div>
       </nav>
-    </div>
+    </aside>
   );
 };
 
