@@ -1,6 +1,68 @@
 const db = require('../db');
 
 const DisponibilidadController = {
+  obtenerHorariosProfesional: async (req, res) => {
+    const { id } = req.params;
+
+    try {
+      console.log('Obteniendo horarios para el profesional:', id);
+      
+      // Primero veamos todos los horarios sin filtrar por activo
+      const todosHorarios = await db.query(
+        `SELECT 
+          dia_semana, 
+          hora_inicio, 
+          hora_fin,
+          activo
+        FROM disponibilidad 
+        WHERE id_profesional = $1`,
+        [id]
+      );
+      
+      console.log('Todos los horarios encontrados:', todosHorarios.rows);
+      
+      // Ahora obtenemos solo los horarios activos
+      const horarios = await db.query(
+        `SELECT 
+          dia_semana, 
+          hora_inicio, 
+          hora_fin
+        FROM disponibilidad 
+        WHERE id_profesional = $1
+          AND activo = true
+        ORDER BY 
+          CASE 
+            WHEN dia_semana = 'lunes' THEN 1
+            WHEN dia_semana = 'martes' THEN 2
+            WHEN dia_semana = 'miércoles' THEN 3
+            WHEN dia_semana = 'jueves' THEN 4
+            WHEN dia_semana = 'viernes' THEN 5
+            WHEN dia_semana = 'sábado' THEN 6
+            WHEN dia_semana = 'domingo' THEN 7
+          END`,
+        [id]
+      );
+
+      console.log('Horarios encontrados:', horarios.rows);
+
+      if (horarios.rows.length === 0) {
+        // Si no hay horarios configurados, devolver horarios por defecto
+        const horariosDefecto = [
+          { dia_semana: 'lunes', hora_inicio: '09:00', hora_fin: '17:00' },
+          { dia_semana: 'martes', hora_inicio: '09:00', hora_fin: '17:00' },
+          { dia_semana: 'miércoles', hora_inicio: '09:00', hora_fin: '17:00' },
+          { dia_semana: 'jueves', hora_inicio: '09:00', hora_fin: '17:00' },
+          { dia_semana: 'viernes', hora_inicio: '09:00', hora_fin: '17:00' }
+        ];
+        return res.json(horariosDefecto);
+      }
+
+      res.json(horarios.rows);
+    } catch (error) {
+      console.error('Error al obtener horarios del profesional:', error);
+      res.status(500).json({ error: 'Error al obtener los horarios del profesional' });
+    }
+  },
   obtenerConfiguracion: async (req, res) => {
     const { id_profesional } = req.params;
 

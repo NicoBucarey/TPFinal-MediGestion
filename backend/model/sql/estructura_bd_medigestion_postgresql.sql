@@ -159,3 +159,34 @@ CREATE TABLE disponibilidad_excepciones (
         (tipo = 'horario_especial' AND hora_inicio IS NOT NULL AND hora_fin IS NOT NULL)
     )
 );
+
+-- ===============================================
+-- Nuevos cambios para el sistema de turnos periódicos
+-- Ejecutar estas consultas en orden
+-- ===============================================
+
+-- 1. Eliminar la tabla turno_periodico si existe (por si ya existía)
+DROP TABLE IF EXISTS turno_periodico_instancia;
+DROP TABLE IF EXISTS turno_periodico;
+
+-- 2. Crear la nueva versión de la tabla turno_periodico
+CREATE TABLE turno_periodico (
+    id_turno_periodico SERIAL PRIMARY KEY,
+    id_paciente INT REFERENCES paciente(id_paciente),
+    id_profesional INT REFERENCES profesional(id_profesional),
+    tipo_periodicidad VARCHAR(20) CHECK (tipo_periodicidad IN ('libre', 'semanal', 'quincenal', 'mensual')),
+    dia_semana VARCHAR(20),
+    hora_inicio TIME,
+    hora_fin TIME,
+    fecha_inicio DATE,
+    fecha_fin DATE CHECK (fecha_fin <= fecha_inicio + INTERVAL '2 months'),
+    estado VARCHAR(50) DEFAULT 'activo',
+    CONSTRAINT fecha_valida CHECK (fecha_fin >= fecha_inicio)
+);
+
+-- 3. Crear la tabla que relaciona turnos periódicos con turnos individuales
+CREATE TABLE turno_periodico_instancia (
+    id_turno INT REFERENCES turno(id_turno),
+    id_turno_periodico INT REFERENCES turno_periodico(id_turno_periodico),
+    PRIMARY KEY (id_turno, id_turno_periodico)
+);

@@ -3,6 +3,19 @@ const db = require('../db');
 const TurnoModel = {
   obtenerTurnosProfesional: async (profesionalId, fechaDesde, fechaHasta) => {
     try {
+      // Consulta para verificar si la tabla turno existe
+      const tableCheck = await db.query(`
+        SELECT EXISTS (
+          SELECT FROM information_schema.tables 
+          WHERE table_schema = 'public' 
+          AND table_name = 'turno'
+        );
+      `);
+
+      if (!tableCheck.rows[0].exists) {
+        throw new Error('La tabla turno no existe en la base de datos');
+      }
+
       const query = `
         SELECT 
           t.id_turno,
@@ -14,16 +27,33 @@ const TurnoModel = {
           u.nombre as nombre_paciente,
           u.apellido as apellido_paciente
         FROM turno t
-        INNER JOIN paciente p ON t.id_paciente = p.id_paciente
-        INNER JOIN usuario u ON p.id_paciente = u.id_usuario
+        LEFT JOIN paciente p ON t.id_paciente = p.id_paciente
+        LEFT JOIN usuario u ON p.id_paciente = u.id_usuario
         WHERE t.id_profesional = $1
           AND t.fecha BETWEEN $2 AND $3
+        ORDER BY t.fecha ASC, t.hora_inicio ASC
       `;
+
+      console.log('Ejecutando query con parámetros:', {
+        profesionalId,
+        fechaDesde,
+        fechaHasta,
+        query
+      });
+
       const result = await db.query(query, [profesionalId, fechaDesde, fechaHasta]);
+      
+      console.log('Resultados obtenidos:', result.rows.length);
       return result.rows;
     } catch (error) {
-      console.error('Error en TurnoModel.obtenerTurnosProfesional:', error);
-      throw error;
+      console.error('Error detallado en TurnoModel.obtenerTurnosProfesional:', {
+        message: error.message,
+        stack: error.stack,
+        profesionalId,
+        fechaDesde,
+        fechaHasta
+      });
+      throw new Error(`Error al obtener turnos: ${error.message}`);
     }
   },
 

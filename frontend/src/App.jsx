@@ -8,6 +8,7 @@ import Register from './pages/auth/Register';
 import Dashboard from './pages/Dashboard';
 import GestionUsuarios from './pages/usuarios/GestionUsuarios';
 import NuevoTurno from './pages/turnos/NuevoTurno';
+import NuevoTurnoPeriodico from './pages/turnos/NuevoTurnoPeriodico';
 import GestionDisponibilidad from './pages/disponibilidad/GestionDisponibilidad';
 import ProtectedRoute from './components/ProtectedRoute';
 import useAuth from './hooks/useAuth';
@@ -51,8 +52,19 @@ function App() {
           {/* Rutas de turnos */}
           <Route path="turnos/nuevo" element={
             <ProtectedRoute allowedRoles={['secretario']}>
-              {console.log('Renderizando NuevoTurno')}
               <NuevoTurno />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="turnos/periodico/nuevo" element={
+            <ProtectedRoute allowedRoles={['secretario']}>
+              <NuevoTurnoPeriodico />
+            </ProtectedRoute>
+          } />
+
+          <Route path="paciente/nuevo-turno-periodico" element={
+            <ProtectedRoute allowedRoles={['paciente']}>
+              <NuevoTurnoPeriodico />
             </ProtectedRoute>
           } />
 

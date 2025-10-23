@@ -3,6 +3,9 @@ const router = express.Router();
 const { checkRole } = require('../middleware/auth');
 const DisponibilidadController = require('../controllers/disponibilidadController');
 
+// Obtener horarios del profesional (accesible para secretarios y pacientes)
+router.get('/horarios/:id', checkRole(['secretario', 'profesional', 'paciente']), DisponibilidadController.obtenerHorariosProfesional);
+
 // Obtener configuración de disponibilidad
 router.get('/:id_profesional', checkRole(['profesional']), DisponibilidadController.obtenerConfiguracion);
 

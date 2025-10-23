@@ -20,9 +20,13 @@ const authMiddleware = async (req, res, next) => {
 const checkRole = (allowedRoles) => {
   return (req, res, next) => {
     console.log('Usuario en middleware:', req.user); // Debug
-    // Convertir el rol del usuario a minúsculas para la comparación
-    const userRole = req.user?.rol?.toLowerCase();
-    // Convertir los roles permitidos a minúsculas
+    
+    if (!req.user || !req.user.rol) {
+      return res.status(403).json({ message: 'Rol de usuario no encontrado' });
+    }
+
+    // Convertir todo a minúsculas para la comparación
+    const userRole = req.user.rol.toLowerCase();
     const normalizedAllowedRoles = allowedRoles.map(role => role.toLowerCase());
     
     console.log('Role del usuario:', userRole); // Debug

@@ -1,60 +1,22 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { toast } from 'sonner';
 import BusquedaPaciente from '../../components/pacientes/BusquedaPaciente';
 import CalendarioTurnos from '../../components/turnos/CalendarioTurnos';
+import SelectProfesional from '../../components/SelectProfesional';
 
 const NuevoTurno = () => {
   const [pacienteSeleccionado, setPacienteSeleccionado] = useState(null);
   const [profesionalSeleccionado, setProfesionalSeleccionado] = useState(null);
   const [fechaTurno, setFechaTurno] = useState(null);
-  const [profesionales, setProfesionales] = useState([]);
   const [error, setError] = useState(null);
-
-  useEffect(() => {
-    const cargarProfesionales = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        console.log('Token:', token); // Verificar que el token existe
-        
-        const response = await fetch('http://localhost:3000/api/profesionales', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        
-        console.log('Status:', response.status); // Ver el código de estado HTTP
-        
-        if (!response.ok) {
-          const errorData = await response.json();
-          console.error('Error del servidor:', errorData); // Ver el mensaje de error del servidor
-          throw new Error(errorData.message || 'Error al cargar profesionales');
-        }
-        
-        const data = await response.json();
-        console.log('Profesionales cargados:', data); // Ver los datos recibidos
-        setProfesionales(data);
-      } catch (error) {
-        console.error('Error detallado:', error);
-        setError('Error al cargar la lista de profesionales');
-        toast.error('Error al cargar profesionales', {
-          description: 'No se pudo obtener la lista de profesionales. Por favor, recargue la página.'
-        });
-      }
-    };
-
-    cargarProfesionales();
-  }, []);
 
   const handlePacienteSelect = (paciente) => {
     setPacienteSeleccionado(paciente);
   };
 
   const handleProfesionalSelect = (event) => {
-    setProfesionalSeleccionado({
-      id: event.target.value,
-      nombre: event.target.options[event.target.selectedIndex].text
-    });
+    // Solo guardamos el ID del profesional
+    setProfesionalSeleccionado(event.target.value);
   };
 
   const handleTurnoSelect = async (fecha) => {
@@ -63,14 +25,16 @@ const NuevoTurno = () => {
     // Confirmar la selección del turno
     if (window.confirm(`¿Desea confirmar el turno para el ${fecha.toLocaleString()}?`)) {
       try {
-        const response = await fetch('/api/turnos', {
+        const token = localStorage.getItem('token');
+        const response = await fetch('http://localhost:3000/api/turnos', {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
           },
           body: JSON.stringify({
-            pacienteId: pacienteSeleccionado.id,
-            profesionalId: profesionalSeleccionado.id,
+            pacienteId: pacienteSeleccionado.id_usuario,
+            profesionalId: profesionalSeleccionado,
             fechaHora: fecha
           })
         });
@@ -130,18 +94,11 @@ const NuevoTurno = () => {
             {error ? (
               <div className="text-red-600 mb-4">{error}</div>
             ) : (
-              <select
-                value={profesionalSeleccionado?.id || ''}
+              <SelectProfesional
+                value={profesionalSeleccionado || ''}
                 onChange={handleProfesionalSelect}
                 className="w-full rounded-lg border-gray-300 border p-2 focus:border-blue-500 focus:ring-blue-500"
-              >
-                <option value="">Seleccione un profesional</option>
-                {profesionales.map(prof => (
-                  <option key={prof.id_usuario} value={prof.id_usuario}>
-                    {`${prof.nombre} ${prof.apellido} - ${prof.especialidad || prof.profesion}`}
-                  </option>
-                ))}
-              </select>
+              />
             )}
           </div>
 
@@ -149,7 +106,7 @@ const NuevoTurno = () => {
             <div>
               <h2 className="text-lg font-medium mb-4">Seleccionar Horario</h2>
               <CalendarioTurnos
-                profesionalId={profesionalSeleccionado.id}
+                profesionalId={profesionalSeleccionado}
                 onTurnoSelect={handleTurnoSelect}
               />
             </div>

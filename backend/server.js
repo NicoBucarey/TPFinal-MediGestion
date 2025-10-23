@@ -4,6 +4,7 @@ const authController = require('./controllers/authController');
 const { authMiddleware, adminMiddleware } = require('./middleware/auth');
 const pacienteRoutes = require('./routes/pacienteRoutes');
 const turnoRoutes = require('./routes/turnoRoutes');
+const turnoPeriodicoRoutes = require('./routes/turnoPeriodicoRoutes');
 const profesionalRoutes = require('./routes/profesionalRoutes');
 const disponibilidadRoutes = require('./routes/disponibilidadRoutes');
 
@@ -24,6 +25,7 @@ app.get('/api/auth/verify', authMiddleware, authController.verify);
 app.post('/api/users/staff', [authMiddleware, adminMiddleware], authController.createStaffUser);
 app.use('/api/pacientes', authMiddleware, pacienteRoutes);
 app.use('/api/turnos', authMiddleware, turnoRoutes);
+app.use('/api/turnos-periodicos', authMiddleware, turnoPeriodicoRoutes);
 app.use('/api/profesionales', authMiddleware, profesionalRoutes);
 app.use('/api/disponibilidad', authMiddleware, disponibilidadRoutes);
 
