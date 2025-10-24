@@ -7,9 +7,14 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-6">
           {/* Identidad */}
           <div>
-            <h3 className="text-xl font-semibold mb-2 text-white"></h3>
-            <p className="text-sm text-white/90">MiConsultorio</p>
-            <p className="mt-2 text-sm text-[#4DD0E1]">Atención médica cercana y profesional.</p>
+            <h3 className="text-xl font-semibold mb-2 text-white">Identidad</h3>
+            <div className="flex items-center gap-3">
+              <img src="/images/logotipo.png" alt="MiConsultorio logo" className="w-24 h-auto object-contain" />
+              <div>
+                <p className="text-sm text-white/90">MiConsultorio</p>
+                <p className="mt-2 text-sm text-[#4DD0E1]">Atención médica cercana y profesional.</p>
+              </div>
+            </div>
           </div>
 
           {/* Enlaces */}
