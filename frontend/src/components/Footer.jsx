@@ -7,12 +7,10 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-6">
           {/* Identidad */}
           <div>
-            <h3 className="text-xl font-semibold mb-2 text-white">Identidad</h3>
             <div className="flex items-center gap-3">
-              <img src="/images/logotipo.png" alt="MiConsultorio logo" className="w-24 h-auto object-contain" />
               <div>
-                <p className="text-sm text-white/90">MiConsultorio</p>
-                <p className="mt-2 text-sm text-[#4DD0E1]">Atención médica cercana y profesional.</p>
+                <p className="text-sm text-white/90">Medigestion</p>
+                <p className="mt-2 text-sm text-[#4DD0E1]">Atención profesional cercana.</p>
               </div>
             </div>
           </div>
@@ -22,8 +20,8 @@ export default function Footer() {
             <h3 className="text-xl font-semibold mb-2 text-white">Enlaces</h3>
             <ul className="space-y-2">
               <li><a href="/" className="text-sm text-white hover:text-[#4DD0E1] transition-colors">Inicio</a></li>
-              <li><a href="/ubicaciones" className="text-sm text-white hover:text-[#4DD0E1] transition-colors">Ubicaciones</a></li>
-              <li><a href="/turnos" className="text-sm text-white hover:text-[#4DD0E1] transition-colors">Turnos</a></li>
+              <li><a href="/ubicaciones" className="text-sm text-white hover:text-[#4DD0E1] transition-colors">Turnos</a></li>
+              <li><a href="/turnos" className="text-sm text-white hover:text-[#4DD0E1] transition-colors">Profesionales</a></li>
             </ul>
           </div>
 
@@ -39,7 +37,7 @@ export default function Footer() {
         </div>
 
         <div className="mt-6 pt-4 border-t border-white/20">
-          <p className="text-center text-sm text-white">© 2025 MiConsultorio. Todos los derechos reservados.</p>
+          <p className="text-center text-sm text-white">© 2025 Medigestion. Todos los derechos reservados.</p>
         </div>
       </div>
     </footer>

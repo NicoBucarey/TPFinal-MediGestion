@@ -13,7 +13,7 @@ const Header = ({ className = '' }) => {
         <div className="flex items-center justify-between h-full">
           <Link to="/" className="flex items-center" aria-label="Ir al inicio">
           {/* mobile: medium, md+: 8x size (~448px) */}
-          <img src="/images/logotipo.png" alt="MiConsultorio" className="w-20 h-20 md:w-[248px] md:h-[248px] object-contain" />
+          <img src="/images/logotipo.png" alt="MiConsultorio" className="w-20 h-20 md:w-[180px] md:h-[180px] object-contain" />
           </Link>
           
           <div className="flex items-center space-x-6">
