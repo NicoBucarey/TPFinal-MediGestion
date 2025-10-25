@@ -13,7 +13,8 @@ const DisponibilidadModel = {
         throw new Error('Profesional no encontrado');
       }
 
-      const query = `
+      // Primero obtenemos la disponibilidad general
+      const disponibilidadQuery = `
         SELECT dia_semana, hora_inicio, hora_fin
         FROM disponibilidad
         WHERE id_profesional = $1
@@ -29,23 +30,39 @@ const DisponibilidadModel = {
           END,
           hora_inicio
       `;
-      const result = await db.query(query, [profesionalId]);
+
+      // Luego obtenemos los turnos ya programados para la próxima semana
+      const turnosQuery = `
+        SELECT fecha, hora_inicio, hora_fin
+        FROM turno
+        WHERE id_profesional = $1
+        AND fecha >= CURRENT_DATE
+        AND fecha <= CURRENT_DATE + INTERVAL '7 days'
+      `;
+      const [disponibilidadResult, turnosResult] = await Promise.all([
+        db.query(disponibilidadQuery, [profesionalId]),
+        db.query(turnosQuery, [profesionalId])
+      ]);
       
-      // Si no hay horarios configurados, devolver horarios por defecto
-      if (result.rows.length === 0) {
-        return {
-          message: 'No hay horarios configurados',
-          horarios: [
-            { dia_semana: 'Lunes', hora_inicio: '09:00', hora_fin: '17:00' },
-            { dia_semana: 'Martes', hora_inicio: '09:00', hora_fin: '17:00' },
-            { dia_semana: 'Miércoles', hora_inicio: '09:00', hora_fin: '17:00' },
-            { dia_semana: 'Jueves', hora_inicio: '09:00', hora_fin: '17:00' },
-            { dia_semana: 'Viernes', hora_inicio: '09:00', hora_fin: '17:00' }
-          ]
-        };
-      }
+      // Si no hay horarios configurados, usar horarios por defecto
+      let horarios = disponibilidadResult.rows.length === 0 ? [
+        { dia_semana: 'Lunes', hora_inicio: '09:00', hora_fin: '17:00' },
+        { dia_semana: 'Martes', hora_inicio: '09:00', hora_fin: '17:00' },
+        { dia_semana: 'Miércoles', hora_inicio: '09:00', hora_fin: '17:00' },
+        { dia_semana: 'Jueves', hora_inicio: '09:00', hora_fin: '17:00' },
+        { dia_semana: 'Viernes', hora_inicio: '09:00', hora_fin: '17:00' }
+      ] : disponibilidadResult.rows;
       
-      return { horarios: result.rows };
+      // Agregamos los turnos ocupados
+      const turnosOcupados = turnosResult.rows.map(turno => ({
+        ...turno,
+        estado: 'ocupado'
+      }));
+
+      return { 
+        horarios,
+        turnosOcupados
+      };
     } catch (error) {
       console.error('Error en DisponibilidadModel.obtenerHorariosProfesional:', error);
       throw error;

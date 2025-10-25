@@ -26,7 +26,14 @@ const NuevoTurno = () => {
     if (window.confirm(`¿Desea confirmar el turno para el ${fecha.toLocaleString()}?`)) {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch('http://localhost:3000/api/turnos', {
+        // Debug datos del turno
+        console.log('Datos del turno a crear:', {
+          paciente: pacienteSeleccionado,
+          profesionalId: profesionalSeleccionado,
+          fechaHora: fecha
+        });
+
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/turnos`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -49,8 +56,9 @@ const NuevoTurno = () => {
           setFechaTurno(null);
         } else {
           const errorData = await response.json();
+          console.error('Error del servidor:', errorData);
           toast.error('Error al registrar el turno', {
-            description: errorData.message || 'Por favor, intente nuevamente'
+            description: errorData.error || errorData.message || 'Por favor, intente nuevamente'
           });
         }
       } catch (error) {

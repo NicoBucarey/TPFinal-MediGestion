@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import axios from 'axios';
 
+// Configurar axios para usar la URL base de la API
+axios.defaults.baseURL = import.meta.env.VITE_API_URL.replace('/api', '');
+
 const SelectProfesional = ({ value, onChange, className = '' }) => {
   const [profesionales, setProfesionales] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -15,7 +18,7 @@ const SelectProfesional = ({ value, onChange, className = '' }) => {
           throw new Error('No hay token de autenticación');
         }
 
-        const response = await axios.get('/api/profesionales', {
+        const response = await axios.get('/profesionales', {
           headers: {
             'Authorization': `Bearer ${token}`
           }

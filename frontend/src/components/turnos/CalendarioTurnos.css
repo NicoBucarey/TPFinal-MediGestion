@@ -1,0 +1,26 @@
+.fc-bg-event {
+  opacity: 0.3 !important;
+  background-color: #ff0000 !important;
+  border: 1px solid #cc0000 !important;
+}
+
+.fc-timegrid-event {
+  background-color: rgba(255, 0, 0, 0.3) !important;
+  border-color: #cc0000 !important;
+}
+
+.fc-timegrid-slot {
+  height: 30px !important;
+}
+
+.fc-timegrid-slot-label {
+  font-size: 0.85em !important;
+}
+
+.fc-event {
+  cursor: not-allowed !important;
+}
+
+.fc-event.fc-bg-event {
+  pointer-events: none;
+}

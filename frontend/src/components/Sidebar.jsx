@@ -1,7 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 
-const Sidebar = () => {
+const Sidebar = ({ className = "w-64" }) => {
   const { user } = useAuthStore();
   const location = useLocation();
   const userRole = user?.rol;

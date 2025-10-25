@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
+import './CalendarioTurnos.css';
 import { toast } from 'sonner';
 
 // Función auxiliar para convertir día de la semana a número
@@ -34,7 +35,7 @@ const CalendarioTurnos = ({ onTurnoSelect, profesionalId }) => {
         const token = localStorage.getItem('token');
         // Asegurarse de que profesionalId sea solo el ID numérico
         const idProfesional = typeof profesionalId === 'object' ? profesionalId.id : profesionalId;
-        const response = await fetch(`http://localhost:3000/api/disponibilidad/horarios/${idProfesional}`, {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/disponibilidad/horarios/${idProfesional}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -45,10 +46,10 @@ const CalendarioTurnos = ({ onTurnoSelect, profesionalId }) => {
         }
         
         const data = await response.json();
-        console.log('Horarios del profesional:', data);
+        console.log('Datos del profesional:', data);
         
-        // Encontrar el horario más temprano y más tardío
-        const horariosLimite = data.reduce((acc, h) => {
+        // Encontrar el horario más temprano y más tardío de los horarios disponibles
+        const horariosLimite = data.horarios.reduce((acc, h) => {
           const inicio = h.hora_inicio;
           const fin = h.hora_fin;
           return {
@@ -57,8 +58,19 @@ const CalendarioTurnos = ({ onTurnoSelect, profesionalId }) => {
           };
         }, { inicio: '23:59:00', fin: '00:00:00' });
 
+        // Convertir los turnos ocupados a eventos del calendario
+        const turnosOcupados = data.turnosOcupados.map(turno => ({
+          title: 'Ocupado',
+          start: `${turno.fecha}T${turno.hora_inicio}`,
+          end: `${turno.fecha}T${turno.hora_fin}`,
+          backgroundColor: '#e74c3c',
+          borderColor: '#c0392b',
+          editable: false
+        }));
+
         setHorarioLaboral(horariosLimite);
-        setHorariosProfesional(data);
+        setHorariosProfesional(data.horarios);
+        setEventos(prevEventos => [...prevEventos, ...turnosOcupados]);
       } catch (error) {
         console.error('Error al obtener horarios:', error);
         toast.error('Error al cargar los horarios del profesional');
@@ -83,7 +95,7 @@ const CalendarioTurnos = ({ onTurnoSelect, profesionalId }) => {
         // Asegurarse de que profesionalId sea solo el ID numérico
         const idProfesional = typeof profesionalId === 'object' ? profesionalId.id : profesionalId;
         const response = await fetch(
-          `http://localhost:3000/api/turnos/profesional/${idProfesional}?fechaDesde=${fechaActual}&fechaHasta=${fechaFin.toISOString().split('T')[0]}`,
+          `${import.meta.env.VITE_API_URL}/turnos/profesional/${idProfesional}?fechaDesde=${fechaActual}&fechaHasta=${fechaFin.toISOString().split('T')[0]}`,
           {
             headers: {
               'Authorization': `Bearer ${token}`
@@ -102,12 +114,18 @@ const CalendarioTurnos = ({ onTurnoSelect, profesionalId }) => {
         const eventosCalendario = data.map(turno => ({
           id: turno.id_turno,
           title: 'Ocupado',
-          start: `${turno.fecha}T${turno.hora_inicio}`,
-          end: `${turno.fecha}T${turno.hora_fin}`,
-          backgroundColor: '#E02424', // Rojo para turnos ocupados
+          start: `${turno.fecha.split('T')[0]}T${turno.hora_inicio}`,
+          end: `${turno.fecha.split('T')[0]}T${turno.hora_fin}`,
+          backgroundColor: '#ff0000',
+          borderColor: '#cc0000',
+          display: 'background'
         }));
         
-        setEventos(eventosCalendario);
+        setEventos(prevEventos => {
+          // Filtrar eventos anteriores que no sean turnos ocupados
+          const eventosAnteriores = prevEventos.filter(e => !e.id);
+          return [...eventosAnteriores, ...eventosCalendario];
+        });
       } catch (error) {
         console.error('Error al obtener turnos:', error);
         toast.error('Error al cargar los turnos');
@@ -128,6 +146,18 @@ const CalendarioTurnos = ({ onTurnoSelect, profesionalId }) => {
     // Validar que no sea una fecha pasada
     if (clickedDate < currentDate) {
       toast.error('No se pueden seleccionar fechas pasadas');
+      return;
+    }
+
+    // Verificar si hay un turno ocupado en este horario
+    const isTurnoOcupado = eventos.some(evento => {
+      const eventoStart = new Date(evento.start);
+      const eventoEnd = new Date(evento.end);
+      return clickedDate >= eventoStart && clickedDate < eventoEnd;
+    });
+
+    if (isTurnoOcupado) {
+      toast.error('Este horario ya está ocupado');
       return;
     }
 
@@ -176,6 +206,8 @@ const CalendarioTurnos = ({ onTurnoSelect, profesionalId }) => {
         initialView="timeGridWeek"
         slotMinTime={horarioLaboral.inicio}
         slotMaxTime={horarioLaboral.fin}
+        slotEventOverlap={false}
+        eventOverlap={false}
         slotDuration="00:15:00"
         slotLabelInterval="00:15:00"
         allDaySlot={false}
@@ -187,12 +219,19 @@ const CalendarioTurnos = ({ onTurnoSelect, profesionalId }) => {
           center: 'title',
           right: 'timeGridWeek,timeGridDay'
         }}
+        eventDisplay="block"
+        eventOverlap={false}
+        eventBackgroundColor="#ff0000"
+        eventBorderColor="#cc0000"
+        selectable={true}
+        selectMirror={true}
+        selectConstraint="businessHours"
+        slotEventOverlap={false}
         businessHours={horariosProfesional?.map(h => ({
           daysOfWeek: [getDayNumber(h.dia_semana)],
           startTime: h.hora_inicio,
           endTime: h.hora_fin
         })) || []}
-        selectConstraint="businessHours"
         height="auto"
         slotLabelFormat={{
           hour: '2-digit',
@@ -205,8 +244,6 @@ const CalendarioTurnos = ({ onTurnoSelect, profesionalId }) => {
           minute: '2-digit',
           hour12: true
         }}
-        selectMirror={true}
-        selectable={true}
         nowIndicator={true}
         snapDuration="00:15:00"
         contentHeight="auto"

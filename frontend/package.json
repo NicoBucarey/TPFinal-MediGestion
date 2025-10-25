@@ -15,7 +15,7 @@
     "@fullcalendar/interaction": "^6.1.9",
     "@fullcalendar/react": "^6.1.9",
     "@fullcalendar/timegrid": "^6.1.9",
-    "@heroicons/react": "^2.2.0",
+    "@heroicons/react": "^2.0.18",
     "axios": "^1.5.1",
     "react": "^18.2.0",
     "react-calendar": "^4.6.0",

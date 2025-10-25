@@ -1,5 +1,5 @@
 import React from 'react';
-import { UserGroupIcon, HeartIcon, ComputerDesktopIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
+import { UserGroupIcon, HeartIcon, ComputerDesktopIcon, ShieldCheckIcon } from "@heroicons/react/24/outline";
 
 const Home = () => {
   return (

@@ -40,7 +40,7 @@ const GestionUsuarios = () => {
     try {
       const token = localStorage.getItem('token');
       await axios.post(
-        'http://localhost:3000/api/users/staff',
+        `${import.meta.env.VITE_API_URL}/users/staff`,
         formData,
         {
           headers: {

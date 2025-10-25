@@ -5,7 +5,7 @@ import { useAuth } from '../../hooks/useAuth';
 import SelectProfesional from '../../components/SelectProfesional';
 
 // Configurar la URL base de axios
-axios.defaults.baseURL = 'http://localhost:3000';
+axios.defaults.baseURL = import.meta.env.VITE_API_URL;
 
 const NuevoTurnoPeriodico = () => {
   const { user } = useAuth();

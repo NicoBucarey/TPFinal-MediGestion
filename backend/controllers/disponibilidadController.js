@@ -22,6 +22,7 @@ const DisponibilidadController = {
       console.log('Todos los horarios encontrados:', todosHorarios.rows);
       
       // Ahora obtenemos solo los horarios activos
+      // Obtener los horarios disponibles
       const horarios = await db.query(
         `SELECT 
           dia_semana, 
@@ -43,21 +44,35 @@ const DisponibilidadController = {
         [id]
       );
 
+      // Obtener los turnos ya programados para la próxima semana
+      const turnos = await db.query(
+        `SELECT 
+          fecha,
+          hora_inicio,
+          hora_fin,
+          estado
+        FROM turno
+        WHERE id_profesional = $1
+          AND fecha >= CURRENT_DATE
+          AND fecha <= CURRENT_DATE + INTERVAL '7 days'
+        ORDER BY fecha, hora_inicio`,
+        [id]
+      );
+
       console.log('Horarios encontrados:', horarios.rows);
 
-      if (horarios.rows.length === 0) {
-        // Si no hay horarios configurados, devolver horarios por defecto
-        const horariosDefecto = [
-          { dia_semana: 'lunes', hora_inicio: '09:00', hora_fin: '17:00' },
-          { dia_semana: 'martes', hora_inicio: '09:00', hora_fin: '17:00' },
-          { dia_semana: 'miércoles', hora_inicio: '09:00', hora_fin: '17:00' },
-          { dia_semana: 'jueves', hora_inicio: '09:00', hora_fin: '17:00' },
-          { dia_semana: 'viernes', hora_inicio: '09:00', hora_fin: '17:00' }
-        ];
-        return res.json(horariosDefecto);
-      }
+      const horariosDisponibles = horarios.rows.length === 0 ? [
+        { dia_semana: 'lunes', hora_inicio: '09:00', hora_fin: '17:00' },
+        { dia_semana: 'martes', hora_inicio: '09:00', hora_fin: '17:00' },
+        { dia_semana: 'miércoles', hora_inicio: '09:00', hora_fin: '17:00' },
+        { dia_semana: 'jueves', hora_inicio: '09:00', hora_fin: '17:00' },
+        { dia_semana: 'viernes', hora_inicio: '09:00', hora_fin: '17:00' }
+      ] : horarios.rows;
 
-      res.json(horarios.rows);
+      res.json({
+        horarios: horariosDisponibles,
+        turnosOcupados: turnos.rows
+      });
     } catch (error) {
       console.error('Error al obtener horarios del profesional:', error);
       res.status(500).json({ error: 'Error al obtener los horarios del profesional' });

@@ -15,7 +15,7 @@ const BusquedaPaciente = ({ onPacienteSelect }) => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:3000/api/pacientes/buscar?termino=${busqueda}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/pacientes/buscar?termino=${busqueda}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
