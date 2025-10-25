@@ -101,7 +101,7 @@ const Sidebar = ({ className = "w-64" }) => {
   });
 
   return (
-    <aside className={`${className} bg-white`}>
+    <aside className="bg-white border-r border-gray-200">
       <nav className="h-full px-3 py-4">
         <div className="mb-8 px-4">
           <h2 className="text-sm font-semibold text-secondary-dark uppercase tracking-wider">

@@ -62,7 +62,7 @@ const authController = {
           id: user.id_usuario,
           rol: user.rol.toLowerCase() // Cambiado de 'role' a 'rol' para mantener consistencia
         },
-        'tu_secreto_super_seguro', // TODO: Mover esto a variable de entorno
+        process.env.JWT_SECRET || 'tu_secreto_super_seguro',
         { expiresIn: '1d' }
       );
 
@@ -260,9 +260,9 @@ const authController = {
         const token = jwt.sign(
           { 
             id: userId,
-            role: 'paciente'
+            rol: 'paciente'
           },
-          process.env.JWT_SECRET,
+          process.env.JWT_SECRET || 'tu_secreto_super_seguro',
           { expiresIn: '1d' }
         );
 

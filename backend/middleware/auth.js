@@ -8,7 +8,7 @@ const authMiddleware = async (req, res, next) => {
       return res.status(401).json({ message: 'Acceso denegado' });
     }
 
-    const decoded = jwt.verify(token, 'tu_secreto_super_seguro');
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'tu_secreto_super_seguro');
     req.user = decoded;
     next();
   } catch (error) {
@@ -43,7 +43,15 @@ const checkRole = (allowedRoles) => {
 
 // Middleware para verificar rol de admin
 const adminMiddleware = (req, res, next) => {
-  if (req.user.role !== 'Admin') {
+  console.log('Admin middleware - Usuario:', req.user); // Debug
+  
+  if (!req.user || !req.user.rol) {
+    return res.status(403).json({ message: 'Rol de usuario no encontrado' });
+  }
+  
+  const userRole = req.user.rol.toLowerCase();
+  
+  if (userRole !== 'admin') {
     return res.status(403).json({ message: 'Acceso denegado - Se requiere rol de administrador' });
   }
   next();
