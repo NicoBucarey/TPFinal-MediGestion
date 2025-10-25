@@ -1,7 +1,33 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import axios from 'axios';
 import { UserGroupIcon, DocumentChartBarIcon, ClipboardDocumentListIcon } from '@heroicons/react/24/outline';
 
 const DashboardAdmin = () => {
+  const [estadisticas, setEstadisticas] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    cargarEstadisticas();
+  }, []);
+
+  const cargarEstadisticas = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+      
+      const response = await axios.get(`${API_URL}/admin/estadisticas`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      setEstadisticas(response.data);
+    } catch (error) {
+      console.error('Error al cargar estadísticas:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const adminCards = [
     {
       title: 'Gestión de Usuarios',
@@ -19,14 +45,6 @@ const DashboardAdmin = () => {
       color: 'bg-green-500',
       hoverColor: 'hover:bg-green-600'
     },
-    {
-      title: 'Registros del Sistema',
-      description: 'Historial de actividades y logs del sistema',
-      icon: ClipboardDocumentListIcon,
-      to: '/dashboard/admin/logs',
-      color: 'bg-purple-500',
-      hoverColor: 'hover:bg-purple-600'
-    }
   ];
 
   return (
@@ -67,7 +85,11 @@ const DashboardAdmin = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600 mb-1">Total Usuarios</p>
-              <p className="text-3xl font-bold text-gray-900">-</p>
+              {loading ? (
+                <div className="animate-pulse h-8 w-16 bg-gray-200 rounded"></div>
+              ) : (
+                <p className="text-3xl font-bold text-gray-900">{estadisticas?.totalUsuarios || 0}</p>
+              )}
             </div>
             <UserGroupIcon className="w-12 h-12 text-blue-500 opacity-20" />
           </div>
@@ -77,7 +99,11 @@ const DashboardAdmin = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600 mb-1">Turnos del Mes</p>
-              <p className="text-3xl font-bold text-gray-900">-</p>
+              {loading ? (
+                <div className="animate-pulse h-8 w-16 bg-gray-200 rounded"></div>
+              ) : (
+                <p className="text-3xl font-bold text-gray-900">{estadisticas?.turnosMes || 0}</p>
+              )}
             </div>
             <ClipboardDocumentListIcon className="w-12 h-12 text-green-500 opacity-20" />
           </div>
@@ -87,7 +113,11 @@ const DashboardAdmin = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600 mb-1">Profesionales Activos</p>
-              <p className="text-3xl font-bold text-gray-900">-</p>
+              {loading ? (
+                <div className="animate-pulse h-8 w-16 bg-gray-200 rounded"></div>
+              ) : (
+                <p className="text-3xl font-bold text-gray-900">{estadisticas?.profesionalesActivos || 0}</p>
+              )}
             </div>
             <DocumentChartBarIcon className="w-12 h-12 text-purple-500 opacity-20" />
           </div>

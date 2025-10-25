@@ -7,6 +7,7 @@ const turnoRoutes = require('./routes/turnoRoutes');
 const turnoPeriodicoRoutes = require('./routes/turnoPeriodicoRoutes');
 const profesionalRoutes = require('./routes/profesionalRoutes');
 const disponibilidadRoutes = require('./routes/disponibilidadRoutes');
+const adminRoutes = require('./routes/adminRoutes');
 
 const app = express();
 
@@ -28,6 +29,7 @@ app.use('/api/turnos', authMiddleware, turnoRoutes);
 app.use('/api/turnos-periodicos', authMiddleware, turnoPeriodicoRoutes);
 app.use('/api/profesionales', authMiddleware, profesionalRoutes);
 app.use('/api/disponibilidad', authMiddleware, disponibilidadRoutes);
+app.use('/api/admin', authMiddleware, adminRoutes);
 
 // Crear usuario administrador inicial
 authController.createInitialAdmin();

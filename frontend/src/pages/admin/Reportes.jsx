@@ -1,13 +1,42 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import axios from 'axios';
 import { ChartBarIcon, CalendarIcon, UserGroupIcon, ClockIcon } from '@heroicons/react/24/outline';
+import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
 const Reportes = () => {
   const [selectedPeriod, setSelectedPeriod] = useState('mes');
+  const [reportes, setReportes] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    cargarReportes();
+  }, [selectedPeriod]);
+
+  const cargarReportes = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+      
+      const response = await axios.get(`${API_URL}/admin/reportes`, {
+        params: { periodo: selectedPeriod },
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      setReportes(response.data);
+    } catch (error) {
+      console.error('Error al cargar reportes:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const COLORS = ['#00796B', '#4DD0E1', '#FFB74D', '#E57373'];
 
   const reportCards = [
     {
       title: 'Turnos Totales',
-      value: '-',
+      value: reportes?.metricas?.turnosTotales || '-',
       change: '+12%',
       icon: CalendarIcon,
       color: 'text-blue-500',
@@ -15,7 +44,7 @@ const Reportes = () => {
     },
     {
       title: 'Pacientes Atendidos',
-      value: '-',
+      value: reportes?.metricas?.pacientesAtendidos || '-',
       change: '+8%',
       icon: UserGroupIcon,
       color: 'text-green-500',
@@ -23,7 +52,7 @@ const Reportes = () => {
     },
     {
       title: 'Turnos Cancelados',
-      value: '-',
+      value: reportes?.metricas?.turnosCancelados || '-',
       change: '-5%',
       icon: ClockIcon,
       color: 'text-red-500',
@@ -31,7 +60,7 @@ const Reportes = () => {
     },
     {
       title: 'Tasa de Ocupación',
-      value: '-%',
+      value: `${reportes?.metricas?.tasaOcupacion || '-'}%`,
       change: '+3%',
       icon: ChartBarIcon,
       color: 'text-purple-500',
@@ -88,67 +117,130 @@ const Reportes = () => {
         {/* Turnos por día */}
         <div className="bg-white rounded-2xl shadow-md p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Turnos por Día</h3>
-          <div className="h-64 flex items-center justify-center text-gray-400">
-            <div className="text-center">
-              <ChartBarIcon className="w-16 h-16 mx-auto mb-2 opacity-50" />
-              <p>Gráfico en desarrollo</p>
+          {loading ? (
+            <div className="h-64 flex items-center justify-center">
+              <div className="animate-pulse text-gray-400">Cargando...</div>
             </div>
-          </div>
+          ) : reportes?.turnosPorDia && reportes.turnosPorDia.length > 0 ? (
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={reportes.turnosPorDia}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis 
+                  dataKey="dia" 
+                  tickFormatter={(value) => new Date(value).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' })}
+                />
+                <YAxis />
+                <Tooltip 
+                  labelFormatter={(value) => new Date(value).toLocaleDateString('es-AR')}
+                />
+                <Legend />
+                <Line type="monotone" dataKey="total" stroke="#00796B" name="Turnos" strokeWidth={2} />
+              </LineChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="h-64 flex items-center justify-center text-gray-400">
+              <p>No hay datos disponibles</p>
+            </div>
+          )}
         </div>
 
         {/* Turnos por profesional */}
         <div className="bg-white rounded-2xl shadow-md p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Turnos por Profesional</h3>
-          <div className="h-64 flex items-center justify-center text-gray-400">
-            <div className="text-center">
-              <UserGroupIcon className="w-16 h-16 mx-auto mb-2 opacity-50" />
-              <p>Gráfico en desarrollo</p>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Top 10 Profesionales</h3>
+          {loading ? (
+            <div className="h-64 flex items-center justify-center">
+              <div className="animate-pulse text-gray-400">Cargando...</div>
             </div>
-          </div>
+          ) : reportes?.turnosPorProfesional && reportes.turnosPorProfesional.length > 0 ? (
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={reportes.turnosPorProfesional.slice(0, 10)}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis 
+                  dataKey="profesional" 
+                  angle={-45}
+                  textAnchor="end"
+                  height={100}
+                  interval={0}
+                  tick={{ fontSize: 10 }}
+                />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="total" fill="#00796B" name="Turnos" />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="h-64 flex items-center justify-center text-gray-400">
+              <p>No hay datos disponibles</p>
+            </div>
+          )}
         </div>
 
         {/* Turnos por especialidad */}
         <div className="bg-white rounded-2xl shadow-md p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Turnos por Especialidad</h3>
-          <div className="space-y-3">
-            {['Cardiología', 'Dermatología', 'Pediatría', 'Traumatología'].map((especialidad, idx) => (
-              <div key={idx} className="flex items-center justify-between">
-                <span className="text-sm text-gray-700">{especialidad}</span>
-                <div className="flex items-center gap-2">
-                  <div className="w-32 bg-gray-200 rounded-full h-2">
-                    <div 
-                      className="bg-[#00796B] h-2 rounded-full" 
-                      style={{ width: `${Math.random() * 100}%` }}
-                    ></div>
+          {loading ? (
+            <div className="h-64 flex items-center justify-center">
+              <div className="animate-pulse text-gray-400">Cargando...</div>
+            </div>
+          ) : reportes?.turnosPorEspecialidad && reportes.turnosPorEspecialidad.length > 0 ? (
+            <div className="space-y-3">
+              {reportes.turnosPorEspecialidad.map((esp, idx) => {
+                const total = reportes.turnosPorEspecialidad.reduce((sum, e) => sum + parseInt(e.total), 0);
+                const porcentaje = ((parseInt(esp.total) / total) * 100).toFixed(1);
+                return (
+                  <div key={idx} className="flex items-center justify-between">
+                    <span className="text-sm text-gray-700">{esp.especialidad}</span>
+                    <div className="flex items-center gap-2">
+                      <div className="w-32 bg-gray-200 rounded-full h-2">
+                        <div 
+                          className="bg-[#00796B] h-2 rounded-full" 
+                          style={{ width: `${porcentaje}%` }}
+                        ></div>
+                      </div>
+                      <span className="text-sm font-medium text-gray-900 w-12 text-right">{esp.total}</span>
+                    </div>
                   </div>
-                  <span className="text-sm font-medium text-gray-900">-</span>
-                </div>
-              </div>
-            ))}
-          </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="h-64 flex items-center justify-center text-gray-400">
+              <p>No hay datos disponibles</p>
+            </div>
+          )}
         </div>
 
         {/* Estado de turnos */}
         <div className="bg-white rounded-2xl shadow-md p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Estado de Turnos</h3>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-              <span className="text-sm font-medium text-green-700">Confirmados</span>
-              <span className="text-xl font-bold text-green-700">-</span>
+          {loading ? (
+            <div className="h-64 flex items-center justify-center">
+              <div className="animate-pulse text-gray-400">Cargando...</div>
             </div>
-            <div className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
-              <span className="text-sm font-medium text-yellow-700">Pendientes</span>
-              <span className="text-xl font-bold text-yellow-700">-</span>
+          ) : reportes?.estadoTurnos && reportes.estadoTurnos.length > 0 ? (
+            <div className="space-y-4">
+              {reportes.estadoTurnos.map((estado, idx) => {
+                const colores = {
+                  'confirmado': { bg: 'bg-green-50', text: 'text-green-700' },
+                  'pendiente': { bg: 'bg-yellow-50', text: 'text-yellow-700' },
+                  'cancelado': { bg: 'bg-red-50', text: 'text-red-700' },
+                  'completado': { bg: 'bg-blue-50', text: 'text-blue-700' }
+                };
+                const color = colores[estado.estado] || { bg: 'bg-gray-50', text: 'text-gray-700' };
+                return (
+                  <div key={idx} className={`flex items-center justify-between p-3 ${color.bg} rounded-lg`}>
+                    <span className={`text-sm font-medium ${color.text} capitalize`}>{estado.estado}</span>
+                    <span className={`text-xl font-bold ${color.text}`}>{estado.total}</span>
+                  </div>
+                );
+              })}
             </div>
-            <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
-              <span className="text-sm font-medium text-red-700">Cancelados</span>
-              <span className="text-xl font-bold text-red-700">-</span>
+          ) : (
+            <div className="h-64 flex items-center justify-center text-gray-400">
+              <p>No hay datos disponibles</p>
             </div>
-            <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-              <span className="text-sm font-medium text-blue-700">Completados</span>
-              <span className="text-xl font-bold text-blue-700">-</span>
-            </div>
-          </div>
+          )}
         </div>
       </div>
 
