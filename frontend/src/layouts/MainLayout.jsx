@@ -10,6 +10,9 @@ const MainLayout = () => {
   
   // Determinar si estamos en una ruta del dashboard
   const isDashboardRoute = location.pathname.startsWith('/dashboard');
+  
+  // Determinar si estamos en rutas de autenticación
+  const isAuthRoute = location.pathname === '/login' || location.pathname === '/register';
 
   // Determinar la clase de rol para estilos específicos
   const getRoleClass = () => {
@@ -22,6 +25,15 @@ const MainLayout = () => {
       default: return '';
     }
   };
+
+  // Si es una ruta de autenticación, no mostrar Header ni Footer
+  if (isAuthRoute) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Outlet />
+      </div>
+    );
+  }
 
   return (
     <div className={`min-h-screen flex flex-col bg-secondary-light ${getRoleClass()}`}>

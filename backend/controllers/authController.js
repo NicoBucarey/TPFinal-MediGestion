@@ -284,8 +284,11 @@ const authController = {
         client.release();
       }
     } catch (error) {
-      console.error(error);
-      res.status(500).json({ message: 'Error al registrar el paciente' });
+      console.error('Error detallado en registro de paciente:', error);
+      res.status(500).json({ 
+        message: 'Error al registrar el paciente',
+        error: error.message 
+      });
     }
   }
 };
