@@ -6,6 +6,8 @@ import Home from './pages/Home';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import Dashboard from './pages/Dashboard';
+import DashboardAdmin from './pages/admin/DashboardAdmin';
+import Reportes from './pages/admin/Reportes';
 import GestionUsuarios from './pages/usuarios/GestionUsuarios';
 import NuevoTurno from './pages/turnos/NuevoTurno';
 import NuevoTurnoPeriodico from './pages/turnos/NuevoTurnoPeriodico';
@@ -41,6 +43,25 @@ function App() {
         }>
           {/* Dashboard principal */}
           <Route index element={<Dashboard />} />
+
+          {/* Rutas de Admin */}
+          <Route path="admin" element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <DashboardAdmin />
+            </ProtectedRoute>
+          } />
+
+          <Route path="admin/users" element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <GestionUsuarios />
+            </ProtectedRoute>
+          } />
+
+          <Route path="admin/reports" element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <Reportes />
+            </ProtectedRoute>
+          } />
 
           {/* Rutas por funcionalidad */}
           <Route path="usuarios/gestion" element={
