@@ -18,7 +18,7 @@ const ClinicaController = {
     try {
       // Validar turno y propiedad del profesional
       const turnoRes = await pool.query(
-        `SELECT t.id_turno, t.id_profesional, t.id_paciente, t.fecha, t.hora_inicio, t.hora_fin,
+        `SELECT t.id_turno, t.id_profesional, t.id_paciente, t.fecha, t.hora_inicio, t.hora_fin, t.estado,
                 u.nombre as pac_nombre, u.apellido as pac_apellido
          FROM turno t
          JOIN paciente p ON p.id_paciente = t.id_paciente
