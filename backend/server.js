@@ -8,12 +8,16 @@ const turnoPeriodicoRoutes = require('./routes/turnoPeriodicoRoutes');
 const profesionalRoutes = require('./routes/profesionalRoutes');
 const disponibilidadRoutes = require('./routes/disponibilidadRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+const clinicaRoutes = require('./routes/clinicaRoutes');
+const path = require('path');
 
 const app = express();
 
 // Middleware
 app.use(cors());
 app.use(express.json());
+// Servir archivos subidos
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Rutas públicas
 app.post('/api/auth/login', authController.login);
@@ -30,6 +34,7 @@ app.use('/api/turnos-periodicos', authMiddleware, turnoPeriodicoRoutes);
 app.use('/api/profesionales', authMiddleware, profesionalRoutes);
 app.use('/api/disponibilidad', authMiddleware, disponibilidadRoutes);
 app.use('/api/admin', authMiddleware, adminRoutes);
+app.use('/api/clinica', authMiddleware, clinicaRoutes);
 
 // Crear usuario administrador inicial
 authController.createInitialAdmin();

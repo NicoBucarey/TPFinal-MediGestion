@@ -12,6 +12,11 @@ import GestionUsuarios from './pages/usuarios/GestionUsuarios';
 import NuevoTurno from './pages/turnos/NuevoTurno';
 import NuevoTurnoPeriodico from './pages/turnos/NuevoTurnoPeriodico';
 import GestionDisponibilidad from './pages/disponibilidad/GestionDisponibilidad';
+import NotaClinica from './pages/profesional/NotaClinica';
+import HistorialPaciente from './pages/profesional/HistorialPaciente';
+import DocumentosCompartidos from './pages/profesional/DocumentosCompartidos';
+import HistoriasClinicas from './pages/profesional/HistoriasClinicas';
+import MisTurnos from './pages/profesional/MisTurnos';
 import ProtectedRoute from './components/ProtectedRoute';
 import useAuth from './hooks/useAuth';
 
@@ -93,6 +98,33 @@ function App() {
           <Route path="disponibilidad" element={
             <ProtectedRoute allowedRoles={['profesional']}>
               <GestionDisponibilidad />
+            </ProtectedRoute>
+          } />
+
+          {/* Rutas clínica profesional */}
+          <Route path="profesional/turnos" element={
+            <ProtectedRoute allowedRoles={['profesional']}>
+              <MisTurnos />
+            </ProtectedRoute>
+          } />
+          <Route path="profesional/nota/:turnoId" element={
+            <ProtectedRoute allowedRoles={['profesional']}>
+              <NotaClinica />
+            </ProtectedRoute>
+          } />
+          <Route path="profesional/paciente/:pacienteId/historial" element={
+            <ProtectedRoute allowedRoles={['profesional']}>
+              <HistorialPaciente />
+            </ProtectedRoute>
+          } />
+          <Route path="profesional/documentos" element={
+            <ProtectedRoute allowedRoles={['profesional']}>
+              <DocumentosCompartidos />
+            </ProtectedRoute>
+          } />
+          <Route path="profesional/historias" element={
+            <ProtectedRoute allowedRoles={['profesional']}>
+              <HistoriasClinicas />
             </ProtectedRoute>
           } />
         </Route>
