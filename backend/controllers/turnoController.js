@@ -87,6 +87,14 @@ const TurnoController = {
         horaFin
       });
 
+      // Enviar recordatorio por WhatsApp
+      try {
+        const RecordatorioService = require('../services/recordatorioService');
+        await RecordatorioService.crearRecordatorioConfirmacion(turno.id_turno);
+      } catch (err) {
+        console.error('Error al enviar recordatorio WhatsApp:', err);
+      }
+
       res.status(201).json(turno);
     } catch (error) {
       console.error('Error en TurnoController.crearTurno:', error);

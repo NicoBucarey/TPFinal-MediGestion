@@ -94,24 +94,32 @@ const TurnoPeriodicoController = {
                         continue; // Saltar fechas no disponibles
                     }
 
-                    // Crear turno individual
-                    const turnoIndividual = await client.query(
-                        `INSERT INTO turno 
-                        (id_profesional, id_paciente, fecha, hora_inicio, hora_fin, estado)
-                        VALUES ($1, $2, $3, $4, $5, $6)
-                        RETURNING *`,
-                        [profesionalId, pacienteId, fecha, horaInicio, horaFin, 'pendiente']
-                    );
-                    console.log('Turno individual creado:', turnoIndividual.rows[0]);
+                    // Crear turno individual usando la misma lógica que el turno simple
+                    const turno = await TurnoModel.crearTurno({
+                        profesionalId,
+                        pacienteId,
+                        fecha,
+                        horaInicio,
+                        horaFin
+                    });
+                    console.log('Turno individual creado:', turno);
 
                     // Crear relación en turno_periodico_instancia
                     await client.query(
                         `INSERT INTO turno_periodico_instancia 
                         (id_turno, id_turno_periodico)
                         VALUES ($1, $2)`,
-                        [turnoIndividual.rows[0].id_turno, turnoPeriodico.rows[0].id_turno_periodico]
+                        [turno.id_turno, turnoPeriodico.rows[0].id_turno_periodico]
                     );
-                    console.log(`Relación turno_periodico_instancia creada para turno ${turnoIndividual.rows[0].id_turno}`);
+                    console.log(`Relación turno_periodico_instancia creada para turno ${turno.id_turno}`);
+
+                    // Enviar recordatorio por WhatsApp para cada turno individual
+                    try {
+                        const RecordatorioService = require('../services/recordatorioService');
+                        await RecordatorioService.crearRecordatorioConfirmacion(turno.id_turno);
+                    } catch (err) {
+                        console.error('Error al enviar recordatorio WhatsApp (turno periódico):', err);
+                    }
                 }
 
                 await client.query('COMMIT');
