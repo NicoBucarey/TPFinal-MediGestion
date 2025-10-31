@@ -62,11 +62,11 @@ const DisponibilidadController = {
       console.log('Horarios encontrados:', horarios.rows);
 
       const horariosDisponibles = horarios.rows.length === 0 ? [
-        { dia_semana: 'lunes', hora_inicio: '09:00', hora_fin: '17:00' },
-        { dia_semana: 'martes', hora_inicio: '09:00', hora_fin: '17:00' },
-        { dia_semana: 'miércoles', hora_inicio: '09:00', hora_fin: '17:00' },
-        { dia_semana: 'jueves', hora_inicio: '09:00', hora_fin: '17:00' },
-        { dia_semana: 'viernes', hora_inicio: '09:00', hora_fin: '17:00' }
+        { dia_semana: 'lunes', hora_inicio: '08:00', hora_fin: '20:00' },
+        { dia_semana: 'martes', hora_inicio: '08:00', hora_fin: '20:00' },
+        { dia_semana: 'miércoles', hora_inicio: '08:00', hora_fin: '20:00' },
+        { dia_semana: 'jueves', hora_inicio: '08:00', hora_fin: '20:00' },
+        { dia_semana: 'viernes', hora_inicio: '08:00', hora_fin: '20:00' }
       ] : horarios.rows;
 
       res.json({
@@ -131,7 +131,47 @@ const DisponibilidadController = {
       try {
         await client.query('BEGIN');
 
-        // Eliminar configuración existente
+        // Verificar si hay turnos futuros asignados
+        const turnosFuturos = await client.query(
+          `SELECT COUNT(*) as count
+           FROM turno
+           WHERE id_profesional = $1
+           AND fecha >= CURRENT_DATE`,
+          [id_profesional]
+        );
+
+        // Si hay turnos futuros, solo permitir cambiar el estado activo/inactivo
+        const tieneturnosFuturos = parseInt(turnosFuturos.rows[0].count) > 0;
+        
+        if (tieneturnosFuturos) {
+          // Obtener la configuración actual
+          const configActual = await client.query(
+            `SELECT dia_semana, hora_inicio, hora_fin, duracion_turno, intervalo_turnos 
+             FROM disponibilidad 
+             WHERE id_profesional = $1 
+             LIMIT 1`,
+            [id_profesional]
+          );
+
+          if (configActual.rows.length > 0) {
+            const configOriginal = configActual.rows[0];
+            // Solo actualizar el estado activo/inactivo
+            for (const [dia, horario] of Object.entries(horarios)) {
+              await client.query(
+                `UPDATE disponibilidad 
+                 SET activo = $1
+                 WHERE id_profesional = $2 AND dia_semana = $3`,
+                [horario.activo, id_profesional, dia]
+              );
+            }
+            return res.status(200).json({
+              message: 'Solo se pueden activar/desactivar días cuando hay turnos asignados',
+              configPreservada: true
+            });
+          }
+        }
+
+        // Si no hay turnos futuros, proceder con la actualización completa
         await client.query(
           'DELETE FROM disponibilidad WHERE id_profesional = $1',
           [id_profesional]

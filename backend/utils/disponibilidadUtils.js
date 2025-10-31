@@ -123,18 +123,30 @@ function generarFechasPeriodicas(fechaInicio, fechaFin, tipoPeriodicidad, diaSem
     const inicio = new Date(fechaInicio);
     const fin = new Date(fechaFin);
     
+    // Normalizar el nombre del día (quita tildes y pasa a minúsculas)
+    function normalizarDia(dia) {
+        return dia
+            .toLowerCase()
+            .replace('á', 'a')
+            .replace('é', 'e')
+            .replace('í', 'i')
+            .replace('ó', 'o')
+            .replace('ú', 'u');
+    }
+
     const diasSemana = {
         'domingo': 0, 'lunes': 1, 'martes': 2, 'miercoles': 3,
         'jueves': 4, 'viernes': 5, 'sabado': 6
     };
 
     let fecha = new Date(inicio);
-    
+    const diaSemanaNormalizado = normalizarDia(diaSemana);
+
     while (fecha <= fin) {
         if (tipoPeriodicidad === 'libre') {
             fechas.push(fecha.toISOString().split('T')[0]);
             fecha.setDate(fecha.getDate() + 1);
-        } else if (fecha.getDay() === diasSemana[diaSemana.toLowerCase()]) {
+        } else if (fecha.getDay() === diasSemana[diaSemanaNormalizado]) {
             fechas.push(fecha.toISOString().split('T')[0]);
             
             switch (tipoPeriodicidad) {

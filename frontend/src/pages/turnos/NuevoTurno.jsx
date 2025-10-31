@@ -1,14 +1,19 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 import BusquedaPaciente from '../../components/pacientes/BusquedaPaciente';
 import CalendarioTurnos from '../../components/turnos/CalendarioTurnos';
 import SelectProfesional from '../../components/SelectProfesional';
+import ConfirmacionTurnoModal from '../../components/turnos/ConfirmacionTurnoModal';
 
 const NuevoTurno = () => {
+  const navigate = useNavigate();
   const [pacienteSeleccionado, setPacienteSeleccionado] = useState(null);
   const [profesionalSeleccionado, setProfesionalSeleccionado] = useState(null);
   const [fechaTurno, setFechaTurno] = useState(null);
   const [error, setError] = useState(null);
+  const [modalAbierto, setModalAbierto] = useState(false);
+  const [fechaSeleccionada, setFechaSeleccionada] = useState(null);
 
   const handlePacienteSelect = (paciente) => {
     setPacienteSeleccionado(paciente);
@@ -19,60 +24,61 @@ const NuevoTurno = () => {
     setProfesionalSeleccionado(event.target.value);
   };
 
-  const handleTurnoSelect = async (fecha) => {
+  const handleTurnoSelect = (fecha) => {
     setFechaTurno(fecha);
-    
-    // Confirmar la selección del turno
-    if (window.confirm(`¿Desea confirmar el turno para el ${fecha.toLocaleString()}?`)) {
-      try {
-        const token = localStorage.getItem('token');
-        // Debug datos del turno
-        console.log('Datos del turno a crear:', {
-          paciente: pacienteSeleccionado,
+    setFechaSeleccionada(fecha);
+    setModalAbierto(true);
+  };
+
+  const handleConfirmarTurno = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/turnos`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          pacienteId: pacienteSeleccionado.id_usuario,
           profesionalId: profesionalSeleccionado,
-          fechaHora: fecha
-        });
+          fechaHora: fechaTurno
+        })
+      });
 
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/turnos`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({
-            pacienteId: pacienteSeleccionado.id_usuario,
-            profesionalId: profesionalSeleccionado,
-            fechaHora: fecha
-          })
+      if (response.ok) {
+        toast.success('¡Turno registrado exitosamente!', {
+          description: `Turno agendado para ${fechaTurno.toLocaleString()}`
         });
-
-        if (response.ok) {
-          toast.success('¡Turno registrado exitosamente!', {
-            description: `Turno agendado para ${fecha.toLocaleString()}`
-          });
-          // Resetear el formulario
-          setPacienteSeleccionado(null);
-          setProfesionalSeleccionado(null);
-          setFechaTurno(null);
-        } else {
-          const errorData = await response.json();
-          console.error('Error del servidor:', errorData);
-          toast.error('Error al registrar el turno', {
-            description: errorData.error || errorData.message || 'Por favor, intente nuevamente'
-          });
-        }
-      } catch (error) {
-        console.error('Error al guardar el turno:', error);
+        
+        // Cerrar el modal y redirigir al dashboard
+        setModalAbierto(false);
+        navigate('/dashboard'); // Redirige al dashboard
+      } else {
+        const errorData = await response.json();
+        console.error('Error del servidor:', errorData);
         toast.error('Error al registrar el turno', {
-          description: 'Hubo un problema al conectar con el servidor'
+          description: errorData.error || errorData.message || 'Por favor, intente nuevamente'
         });
       }
+    } catch (error) {
+      console.error('Error al guardar el turno:', error);
+      toast.error('Error al registrar el turno', {
+        description: 'Hubo un problema al conectar con el servidor'
+      });
     }
   };
 
   return (
     <div className="p-6">
       <h1 className="text-2xl font-semibold mb-6">Nuevo Turno</h1>
+      
+      <ConfirmacionTurnoModal 
+        isOpen={modalAbierto}
+        onClose={() => setModalAbierto(false)}
+        onConfirm={handleConfirmarTurno}
+        fecha={fechaSeleccionada}
+      />
       
       {!pacienteSeleccionado ? (
         <div>

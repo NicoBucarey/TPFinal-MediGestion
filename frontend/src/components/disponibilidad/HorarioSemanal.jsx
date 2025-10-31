@@ -11,13 +11,13 @@ const diasSemana = {
 };
 
 const defaultHorarios = {
-  lunes: { activo: false, horaInicio: '09:00', horaFin: '17:00' },
-  martes: { activo: false, horaInicio: '09:00', horaFin: '17:00' },
-  miercoles: { activo: false, horaInicio: '09:00', horaFin: '17:00' },
-  jueves: { activo: false, horaInicio: '09:00', horaFin: '17:00' },
-  viernes: { activo: false, horaInicio: '09:00', horaFin: '17:00' },
-  sabado: { activo: false, horaInicio: '09:00', horaFin: '13:00' },
-  domingo: { activo: false, horaInicio: '09:00', horaFin: '13:00' }
+  lunes: { activo: false, horaInicio: '08:00', horaFin: '20:00' },
+  martes: { activo: false, horaInicio: '08:00', horaFin: '20:00' },
+  miercoles: { activo: false, horaInicio: '08:00', horaFin: '20:00' },
+  jueves: { activo: false, horaInicio: '08:00', horaFin: '20:00' },
+  viernes: { activo: false, horaInicio: '08:00', horaFin: '20:00' },
+  sabado: { activo: false, horaInicio: '08:00', horaFin: '13:00' },
+  domingo: { activo: false, horaInicio: '08:00', horaFin: '13:00' }
 };
 
 const HorarioSemanal = ({ horarios, onChange }) => {

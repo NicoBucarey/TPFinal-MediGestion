@@ -1,238 +1,222 @@
 import React, { useState } from 'react';
 import { toast } from 'sonner';
 import axios from 'axios';
-import { useAuth } from '../../hooks/useAuth';
+import BusquedaPaciente from '../../components/pacientes/BusquedaPaciente';
 import SelectProfesional from '../../components/SelectProfesional';
+import CalendarioTurnos from '../../components/turnos/CalendarioTurnos';
+import ConfiguracionPeriodicidad from '../../components/turnos/ConfiguracionPeriodicidad';
+import { useAuthStore } from '../../stores/authStore';
 
-// Configurar la URL base de axios
 axios.defaults.baseURL = import.meta.env.VITE_API_URL;
 
 const NuevoTurnoPeriodico = () => {
-  const { user } = useAuth();
+  const [paso, setPaso] = useState(1);
+  const [pacienteSeleccionado, setPacienteSeleccionado] = useState(null);
+  const [profesionalSeleccionado, setProfesionalSeleccionado] = useState(null);
+  const [fechaHoraSeleccionada, setFechaHoraSeleccionada] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [form, setForm] = useState({
-    profesionalId: '',
-    tipoPeriodicidad: 'libre',
-    diaSemana: 'lunes',
-    horaInicio: '',
-    horaFin: '',
-    fechaInicio: '',
-    fechaFin: ''
-  });
+  const token = useAuthStore((state) => state.token);
 
-  // Se eliminó la carga de profesionales ya que ahora se maneja en el componente SelectProfesional
+  // Paso 1: Selección de paciente
+  const handlePacienteSeleccionado = (paciente) => {
+    setPacienteSeleccionado(paciente);
+    setPaso(2);
+  };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
+  // Paso 2: Selección de profesional
+  const handleProfesionalSelect = (event) => {
+    setProfesionalSeleccionado(event.target.value);
+    setPaso(3);
+  };
 
+  // Paso 3: Selección de fecha/hora
+  const handleFechaHoraSeleccionada = (fechaHora) => {
+    console.log('Fecha y hora seleccionada:', fechaHora);
+    // Transformar el objeto Date en el formato esperado
+    if (fechaHora instanceof Date) {
+      const yyyy = fechaHora.getFullYear();
+      const mm = String(fechaHora.getMonth() + 1).padStart(2, '0');
+      const dd = String(fechaHora.getDate()).padStart(2, '0');
+      const fecha = `${yyyy}-${mm}-${dd}`;
+      const hora = String(fechaHora.getHours()).padStart(2, '0');
+      const minutos = String(fechaHora.getMinutes()).padStart(2, '0');
+      const hora_inicio = `${hora}:${minutos}:00`;
+      // Asumimos duración estándar de 30 minutos
+      let finDate = new Date(fechaHora.getTime() + 30 * 60000);
+      const hora_fin = `${String(finDate.getHours()).padStart(2, '0')}:${String(finDate.getMinutes()).padStart(2, '0')}:00`;
+      setFechaHoraSeleccionada({ fecha, hora_inicio, hora_fin });
+    } else {
+      setFechaHoraSeleccionada(fechaHora);
+    }
+    setPaso(4);
+  };
+
+  // Paso 4: Configuración de periodicidad
+  const handleConfiguracionPeriodicidad = async (config) => {
+    await crearTurnoPeriodico(config);
+  };
+
+  const crearTurnoPeriodico = async (config) => {
     try {
-      const response = await axios.post('/api/turnos-periodicos', {
-        ...form,
-        pacienteId: user.rol === 'paciente' ? user.id : form.pacienteId,
-      });
-
-      toast.success('Turnos periódicos creados correctamente');
-
-      // Resetear formulario
-      setForm({
-        profesionalId: '',
-        tipoPeriodicidad: 'libre',
-        diaSemana: 'lunes',
-        horaInicio: '',
-        horaFin: '',
-        fechaInicio: '',
-        fechaFin: ''
-      });
-    } catch (error) {
-      console.error('Error al crear turnos periódicos:', error);
-      
-      // Mostrar conflictos si existen
-      if (error.response?.data?.conflictos) {
-        const conflictos = error.response.data.conflictos;
-        toast.error('Conflictos de horarios', {
-          description: conflictos.map((conflicto, index) => (
-            `${new Date(conflicto.fecha).toLocaleDateString()}: ${conflicto.mensaje}`
-          )).join('\n'),
-          duration: 10000,
-        });
-      } else {
-        toast.error('No se pudieron crear los turnos periódicos');
+      setLoading(true);
+      // Validar datos antes de enviar
+      if (!pacienteSeleccionado || !pacienteSeleccionado.id_usuario) {
+        toast.error('Selecciona un paciente válido');
+        setLoading(false);
+        return;
       }
+      if (!profesionalSeleccionado) {
+        toast.error('Selecciona un profesional válido');
+        setLoading(false);
+        return;
+      }
+      if (!fechaHoraSeleccionada) {
+        toast.error('Selecciona una fecha y hora válida');
+        setLoading(false);
+        return;
+      }
+      if (!config.fechaInicio || !config.fechaFin) {
+        toast.error('Configura la periodicidad correctamente');
+        setLoading(false);
+        return;
+      }
+
+      // Construir payload con datos correctos
+      const payload = {
+        pacienteId: pacienteSeleccionado.id_usuario,
+        profesionalId: profesionalSeleccionado,
+        horaInicio: fechaHoraSeleccionada.hora_inicio,
+        horaFin: fechaHoraSeleccionada.hora_fin,
+        tipoPeriodicidad: config.tipo,
+        diaSemana: config.diaSemana,
+        fechaInicio: config.fechaInicio || fechaHoraSeleccionada.fecha,
+        fechaFin: config.fechaFin
+      };
+      console.log('--- INICIO crearTurnoPeriodico FRONTEND ---');
+      console.log('Payload enviado:', payload);
+      const response = await axios.post('/turnos-periodicos', payload, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      console.log('Respuesta backend:', response.data);
+      toast.success('Turnos periódicos creados exitosamente');
+      setPaso(1);
+      setPacienteSeleccionado(null);
+      setProfesionalSeleccionado(null);
+      setFechaHoraSeleccionada(null);
+    } catch (error) {
+      console.error('Error al crear turno periódico:', error);
+      if (error.response) {
+        console.error('Respuesta error backend:', error.response.data);
+      }
+      toast.error(error.response?.data?.error || 'Error al crear los turnos periódicos');
     } finally {
       setLoading(false);
+      console.log('--- FIN crearTurnoPeriodico FRONTEND ---');
     }
   };
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setForm(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  // Calcular fecha máxima (2 meses desde la fecha inicial)
-  const calcularFechaMaxima = () => {
-    if (!form.fechaInicio) return '';
-    const fecha = new Date(form.fechaInicio);
-    fecha.setMonth(fecha.getMonth() + 2);
-    return fecha.toISOString().split('T')[0];
+  const handleVolver = () => {
+    if (paso > 1) {
+      setPaso(paso - 1);
+      if (paso === 2) setPacienteSeleccionado(null);
+      if (paso === 3) setProfesionalSeleccionado(null);
+      if (paso === 4) setFechaHoraSeleccionada(null);
+    }
   };
 
   return (
-    <div className="p-6">
-      <form onSubmit={handleSubmit} className="max-w-2xl mx-auto space-y-6">
-        <h2 className="text-2xl font-bold text-gray-900">Nuevo Turno Periódico</h2>
-
-        {/* Selección de Profesional */}
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700">
-            Profesional <span className="text-red-500">*</span>
-          </label>
-          <SelectProfesional
-            value={form.profesionalId}
-            onChange={(e) => handleInputChange({ target: { name: 'profesionalId', value: e.target.value } })}
-            className="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-          />
-        </div>
-
-        {/* Tipo de Periodicidad */}
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700">
-            Tipo de Periodicidad <span className="text-red-500">*</span>
-          </label>
-          <div className="flex gap-4">
-            {['libre', 'semanal', 'quincenal', 'mensual'].map((tipo) => (
-              <label key={tipo} className="inline-flex items-center">
-                <input
-                  type="radio"
-                  name="tipoPeriodicidad"
-                  value={tipo}
-                  checked={form.tipoPeriodicidad === tipo}
-                  onChange={handleInputChange}
-                  className="form-radio h-4 w-4 text-indigo-600"
-                />
-                <span className="ml-2 capitalize">{tipo}</span>
-              </label>
-            ))}
-          </div>
-        </div>
-
-        {/* Día de la Semana (solo si no es libre) */}
-        {form.tipoPeriodicidad !== 'libre' && (
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">
-              Día de la Semana <span className="text-red-500">*</span>
-            </label>
-            <select
-              name="diaSemana"
-              value={form.diaSemana}
-              onChange={handleInputChange}
-              className="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-              required
-            >
-              <option value="lunes">Lunes</option>
-              <option value="martes">Martes</option>
-              <option value="miercoles">Miércoles</option>
-              <option value="jueves">Jueves</option>
-              <option value="viernes">Viernes</option>
-              <option value="sabado">Sábado</option>
-              <option value="domingo">Domingo</option>
-            </select>
-          </div>
-        )}
-
-        {/* Horarios */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">
-              Hora de Inicio <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="time"
-              name="horaInicio"
-              value={form.horaInicio}
-              onChange={handleInputChange}
-              className="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-              required
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">
-              Hora de Fin <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="time"
-              name="horaFin"
-              value={form.horaFin}
-              onChange={handleInputChange}
-              className="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-              required
-            />
-          </div>
-        </div>
-
-        {/* Fechas */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">
-              Fecha de Inicio <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="date"
-              name="fechaInicio"
-              value={form.fechaInicio}
-              onChange={handleInputChange}
-              min={new Date().toISOString().split('T')[0]}
-              className="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-              required
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">
-              Fecha de Fin <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="date"
-              name="fechaFin"
-              value={form.fechaFin}
-              onChange={handleInputChange}
-              min={form.fechaInicio}
-              max={calcularFechaMaxima()}
-              className="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-              required
-            />
-          </div>
-        </div>
-
-        {/* Mensaje informativo */}
-        <div className="bg-blue-50 border-l-4 border-blue-400 p-4">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-              </svg>
+    <div className="container mx-auto px-4 py-8">
+      <div className="max-w-4xl mx-auto">
+        <h1 className="text-3xl font-bold mb-6">Nuevo Turno Periódico</h1>
+        <div className="mb-8">
+          <div className="flex items-center justify-between">
+            <div className={`flex-1 ${paso >= 1 ? 'text-blue-600' : 'text-gray-400'}`}>
+              <div className="flex items-center">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${paso >= 1 ? 'bg-blue-600 text-white' : 'bg-gray-300'}`}>
+                  1
+                </div>
+                <span className="ml-2 hidden sm:inline">Paciente</span>
+              </div>
             </div>
-            <div className="ml-3">
-              <p className="text-sm text-blue-700">
-                Los turnos se crearán según la disponibilidad del profesional y respetando otros turnos existentes.
-              </p>
+            <div className={`flex-1 h-1 ${paso >= 2 ? 'bg-blue-600' : 'bg-gray-300'}`}></div>
+            <div className={`flex-1 ${paso >= 2 ? 'text-blue-600' : 'text-gray-400'}`}>
+              <div className="flex items-center justify-center">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${paso >= 2 ? 'bg-blue-600 text-white' : 'bg-gray-300'}`}>
+                  2
+                </div>
+                <span className="ml-2 hidden sm:inline">Profesional</span>
+              </div>
+            </div>
+            <div className={`flex-1 h-1 ${paso >= 3 ? 'bg-blue-600' : 'bg-gray-300'}`}></div>
+            <div className={`flex-1 ${paso >= 3 ? 'text-blue-600' : 'text-gray-400'}`}>
+              <div className="flex items-center justify-end">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${paso >= 3 ? 'bg-blue-600 text-white' : 'bg-gray-300'}`}>
+                  3
+                </div>
+                <span className="ml-2 hidden sm:inline">Fecha/Hora</span>
+              </div>
+            </div>
+            <div className={`flex-1 h-1 ${paso >= 4 ? 'bg-blue-600' : 'bg-gray-300'}`}></div>
+            <div className={`flex-1 ${paso >= 4 ? 'text-blue-600' : 'text-gray-400'}`}>
+              <div className="flex items-center justify-end">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${paso >= 4 ? 'bg-blue-600 text-white' : 'bg-gray-300'}`}>
+                  4
+                </div>
+                <span className="ml-2 hidden sm:inline">Periodicidad</span>
+              </div>
             </div>
           </div>
         </div>
-
-        {/* Botón de submit */}
-        <button
-          type="submit"
-          disabled={loading}
-          className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-        >
-          {loading ? 'Creando turnos...' : 'Crear Turnos Periódicos'}
-        </button>
-      </form>
+        <div className="bg-white rounded-lg shadow p-6">
+          {paso === 1 && (
+            <div>
+              <h2 className="text-xl font-semibold mb-4">Seleccionar Paciente</h2>
+              <BusquedaPaciente onPacienteSelect={handlePacienteSeleccionado} />
+            </div>
+          )}
+          {paso === 2 && pacienteSeleccionado && (
+            <div>
+              <h2 className="text-xl font-semibold mb-4">Seleccionar Profesional</h2>
+              <SelectProfesional
+                value={profesionalSeleccionado || ''}
+                onChange={handleProfesionalSelect}
+                required
+              />
+              <button onClick={handleVolver} className="mt-4 px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300">
+                Volver
+              </button>
+            </div>
+          )}
+          {paso === 3 && profesionalSeleccionado && (
+            <div>
+              <h2 className="text-xl font-semibold mb-4">Seleccionar Fecha y Hora</h2>
+              <CalendarioTurnos
+                profesionalId={profesionalSeleccionado}
+                onTurnoSelect={handleFechaHoraSeleccionada}
+                esTurnoPeriodico={true}
+              />
+              <button onClick={handleVolver} className="mt-4 px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300">
+                Volver
+              </button>
+            </div>
+          )}
+          {paso === 4 && fechaHoraSeleccionada && (
+            <div>
+              <h2 className="text-xl font-semibold mb-4">Configurar Periodicidad</h2>
+              <ConfiguracionPeriodicidad
+                onConfirmar={handleConfiguracionPeriodicidad}
+                fechaHoraInicial={fechaHoraSeleccionada}
+                loading={loading}
+              />
+              <button onClick={handleVolver} className="mt-4 px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300" disabled={loading}>
+                Volver
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 };

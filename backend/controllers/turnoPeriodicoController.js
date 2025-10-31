@@ -16,6 +16,9 @@ const TurnoPeriodicoController = {
                 fechaFin 
             } = req.body;
 
+            console.log('--- INICIO crearTurnoPeriodico ---');
+            console.log('Payload recibido:', req.body);
+
             // Validar que la fecha fin no exceda 2 meses desde fecha inicio
             const fechaInicioObj = new Date(fechaInicio);
             const fechaFinObj = new Date(fechaFin);
@@ -23,6 +26,7 @@ const TurnoPeriodicoController = {
             dosMesesDespues.setMonth(dosMesesDespues.getMonth() + 2);
 
             if (fechaFinObj > dosMesesDespues) {
+                console.log('Fecha fin excede 2 meses desde fecha inicio');
                 return res.status(400).json({ 
                     error: 'La fecha fin no puede exceder 2 meses desde la fecha de inicio' 
                 });
@@ -43,6 +47,7 @@ const TurnoPeriodicoController = {
                     [profesionalId, pacienteId, tipoPeriodicidad, diaSemana,
                      horaInicio, horaFin, fechaInicio, fechaFin, 'activo']
                 );
+                console.log('Turno periódico creado:', turnoPeriodico.rows[0]);
 
                 // Validar disponibilidad para todas las fechas
                 const validacion = await validarDisponibilidadPeriodica(
@@ -54,8 +59,10 @@ const TurnoPeriodicoController = {
                     tipoPeriodicidad,
                     diaSemana
                 );
+                console.log('Validación disponibilidad periódica:', validacion);
 
                 if (!validacion.disponible) {
+                    console.log('Conflictos detectados:', validacion.conflictos);
                     return res.status(400).json({
                         error: 'Existen conflictos en algunas fechas',
                         conflictos: validacion.conflictos
@@ -69,6 +76,7 @@ const TurnoPeriodicoController = {
                     tipoPeriodicidad,
                     diaSemana
                 );
+                console.log('Fechas generadas para turnos:', fechasGeneradas);
 
                 // Crear los turnos individuales y sus relaciones
                 for (const fecha of fechasGeneradas) {
@@ -79,8 +87,10 @@ const TurnoPeriodicoController = {
                         horaInicio, 
                         horaFin
                     );
+                    console.log(`Fecha ${fecha}: disponible=${disponible}`);
 
                     if (!disponible) {
+                        console.log(`Fecha ${fecha} no disponible, se omite.`);
                         continue; // Saltar fechas no disponibles
                     }
 
@@ -92,6 +102,7 @@ const TurnoPeriodicoController = {
                         RETURNING *`,
                         [profesionalId, pacienteId, fecha, horaInicio, horaFin, 'pendiente']
                     );
+                    console.log('Turno individual creado:', turnoIndividual.rows[0]);
 
                     // Crear relación en turno_periodico_instancia
                     await client.query(
@@ -100,15 +111,18 @@ const TurnoPeriodicoController = {
                         VALUES ($1, $2)`,
                         [turnoIndividual.rows[0].id_turno, turnoPeriodico.rows[0].id_turno_periodico]
                     );
+                    console.log(`Relación turno_periodico_instancia creada para turno ${turnoIndividual.rows[0].id_turno}`);
                 }
 
                 await client.query('COMMIT');
+                console.log('Transacción commit, turnos periódicos creados correctamente.');
                 res.status(201).json({
                     mensaje: "Turno periódico creado exitosamente",
                     turnoPeriodico: turnoPeriodico.rows[0]
                 });
             } catch (error) {
                 await client.query('ROLLBACK');
+                console.error('Error en transacción, rollback ejecutado:', error);
                 throw error;
             } finally {
                 client.release();
@@ -116,6 +130,9 @@ const TurnoPeriodicoController = {
         } catch (error) {
             console.error('Error en TurnoPeriodicoController.crearTurnoPeriodico:', error);
             res.status(500).json({ error: 'Error al crear el turno periódico' });
+        }
+        finally {
+            console.log('--- FIN crearTurnoPeriodico ---');
         }
     },
 

@@ -10,6 +10,7 @@ const disponibilidadRoutes = require('./routes/disponibilidadRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const clinicaRoutes = require('./routes/clinicaRoutes');
 const path = require('path');
+const { inicializarCronJobs } = require('./jobs/cronJobs');
 
 const app = express();
 
@@ -38,6 +39,9 @@ app.use('/api/clinica', authMiddleware, clinicaRoutes);
 
 // Crear usuario administrador inicial
 authController.createInitialAdmin();
+
+// Inicializar cron jobs para recordatorios
+inicializarCronJobs();
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

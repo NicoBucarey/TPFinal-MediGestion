@@ -171,10 +171,20 @@ const authController = {
 
         // Si es profesional, insertar datos adicionales
         if (rol === 'profesional') {
+          // Insertar datos del profesional
           await client.query(
             'INSERT INTO profesional (id_profesional, profesion, especialidad) VALUES ($1, $2, $3)',
             [userId, profesion, especialidad]
           );
+
+          // Insertar horarios por defecto para el profesional
+          const diasSemana = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes'];
+          for (const dia of diasSemana) {
+            await client.query(
+              'INSERT INTO disponibilidad (id_profesional, dia_semana, hora_inicio, hora_fin, duracion_turno, intervalo_turnos, activo) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+              [userId, dia, '08:00', '20:00', 30, 0, true]
+            );
+          }
         }
 
         await client.query('COMMIT');

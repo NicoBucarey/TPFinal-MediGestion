@@ -1,7 +1,9 @@
 # Dependencies
 node_modules/
+**/node_modules/
 /.pnp
 .pnp.js
+package-lock.json
 
 # Testing
 /coverage
@@ -9,35 +11,61 @@ node_modules/
 # Production
 /build
 /dist
+**/dist
+dist-ssr
 
 # Environment variables - IMPORTANTE: cada desarrollador tiene su propia configuración
 .env
 .env.local
+.env.development
 .env.development.local
+.env.test
 .env.test.local
+.env.production
 .env.production.local
 backend/.env
 frontend/.env
+**/.env
+**/.env.local
+**/.env.development
+**/.env.production
+**/.env.test
+
+# WhatsApp Web Session (contiene credenciales sensibles)
+.wwebjs_auth/
+.wwebjs_cache/
+**/.wwebjs_auth/
+**/.wwebjs_cache/
 
 # Logs
+logs
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-*.log
-
-# OS
-.DS_Store
-Thumbs.db
+pnpm-debug.log*
+lerna-debug.log*
 
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
+.idea/
 .idea
+.DS_Store
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+*.swp
+*.swo
+
+# Local files
+*.local
+
+# OS
+.DS_Store
+Thumbs.db
 
 # Database
 *.db

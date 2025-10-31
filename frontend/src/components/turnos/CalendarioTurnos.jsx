@@ -25,7 +25,7 @@ const CalendarioTurnos = ({ onTurnoSelect, profesionalId }) => {
   const [loading, setLoading] = useState(true);
   const [horarioLaboral, setHorarioLaboral] = useState({
     inicio: '08:00:00',
-    fin: '18:00:00'
+    fin: '20:00:00'
   });
 
   // Obtener los horarios disponibles del profesional
@@ -208,8 +208,8 @@ const CalendarioTurnos = ({ onTurnoSelect, profesionalId }) => {
         slotMaxTime={horarioLaboral.fin}
         slotEventOverlap={false}
         eventOverlap={false}
-        slotDuration="00:15:00"
-        slotLabelInterval="00:15:00"
+        slotDuration={`00:${horariosProfesional?.[0]?.duracion_turno || '30'}:00`}
+        slotLabelInterval={`00:${horariosProfesional?.[0]?.duracion_turno || '30'}:00`}
         allDaySlot={false}
         locale="es"
         events={eventos}
@@ -221,8 +221,6 @@ const CalendarioTurnos = ({ onTurnoSelect, profesionalId }) => {
         }}
         eventDisplay="block"
         eventOverlap={false}
-        eventBackgroundColor="#ff0000"
-        eventBorderColor="#cc0000"
         selectable={true}
         selectMirror={true}
         selectConstraint="businessHours"
@@ -245,7 +243,7 @@ const CalendarioTurnos = ({ onTurnoSelect, profesionalId }) => {
           hour12: true
         }}
         nowIndicator={true}
-        snapDuration="00:15:00"
+        snapDuration={`00:${horariosProfesional?.[0]?.duracion_turno || '30'}:00`}
         contentHeight="auto"
         expandRows={true}
         hiddenDays={[0]} // Ocultar domingo
