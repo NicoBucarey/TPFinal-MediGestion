@@ -2,261 +2,274 @@ const pool = require('../db');
 const TurnoModel = require('../model/turnoModel');
 const { validarDisponibilidad, validarDisponibilidadPeriodica } = require('../utils/disponibilidadUtils');
 
-const TurnoPeriodicoController = {
-    crearTurnoPeriodico: async (req, res) => {
+async function crearTurnoPeriodico(req, res) {
+    try {
+        const { 
+            profesionalId, 
+            pacienteId, 
+            tipoPeriodicidad,
+            diaSemana,
+            horaInicio,
+            horaFin,
+            fechaInicio,
+            fechaFin 
+        } = req.body;
+
+        // Validar que la fecha fin no exceda 2 meses desde fecha inicio
+        const fechaInicioObj = new Date(fechaInicio);
+        const fechaFinObj = new Date(fechaFin);
+        const dosMesesDespues = new Date(fechaInicioObj);
+        dosMesesDespues.setMonth(dosMesesDespues.getMonth() + 2);
+
+        if (fechaFinObj > dosMesesDespues) {
+            return res.status(400).json({ 
+                error: 'La fecha fin no puede exceder 2 meses desde la fecha de inicio' 
+            });
+        }
+
+        // Iniciar transacción
+        const client = await pool.connect();
         try {
-            const { 
-                profesionalId, 
-                pacienteId, 
-                tipoPeriodicidad,
-                diaSemana,
+            await client.query('BEGIN');
+
+            // Crear el turno periódico
+            const turnoPeriodico = await client.query(
+                `INSERT INTO turno_periodico 
+                (id_profesional, id_paciente, tipo_periodicidad, dia_semana, 
+                 hora_inicio, hora_fin, fecha_inicio, fecha_fin, estado)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                RETURNING *`,
+                [profesionalId, pacienteId, tipoPeriodicidad, diaSemana,
+                 horaInicio, horaFin, fechaInicio, fechaFin, 'activo']
+            );
+
+            // Validar disponibilidad para todas las fechas
+            const validacion = await validarDisponibilidadPeriodica(
+                profesionalId,
+                fechaInicio,
+                fechaFin,
                 horaInicio,
                 horaFin,
+                tipoPeriodicidad,
+                diaSemana
+            );
+
+            if (!validacion.disponible) {
+                return res.status(400).json({
+                    error: 'Existen conflictos en algunas fechas',
+                    conflictos: validacion.conflictos
+                });
+            }
+
+            // Generar las instancias de turnos según la periodicidad
+            const fechasGeneradas = generarFechasTurnos(
                 fechaInicio,
-                fechaFin 
-            } = req.body;
+                fechaFin,
+                tipoPeriodicidad,
+                diaSemana
+            );
 
-            console.log('--- INICIO crearTurnoPeriodico ---');
-            console.log('Payload recibido:', req.body);
-
-            // Validar que la fecha fin no exceda 2 meses desde fecha inicio
-            const fechaInicioObj = new Date(fechaInicio);
-            const fechaFinObj = new Date(fechaFin);
-            const dosMesesDespues = new Date(fechaInicioObj);
-            dosMesesDespues.setMonth(dosMesesDespues.getMonth() + 2);
-
-            if (fechaFinObj > dosMesesDespues) {
-                console.log('Fecha fin excede 2 meses desde fecha inicio');
-                return res.status(400).json({ 
-                    error: 'La fecha fin no puede exceder 2 meses desde la fecha de inicio' 
-                });
-            }
-
-            // Iniciar transacción
-            const client = await pool.connect();
-            try {
-                await client.query('BEGIN');
-
-                // Crear el turno periódico
-                const turnoPeriodico = await client.query(
-                    `INSERT INTO turno_periodico 
-                    (id_profesional, id_paciente, tipo_periodicidad, dia_semana, 
-                     hora_inicio, hora_fin, fecha_inicio, fecha_fin, estado)
-                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-                    RETURNING *`,
-                    [profesionalId, pacienteId, tipoPeriodicidad, diaSemana,
-                     horaInicio, horaFin, fechaInicio, fechaFin, 'activo']
+            // Guardar datos para el mensaje grupal
+            let turnosPeriodicosParaMensaje = [];
+            for (const fecha of fechasGeneradas) {
+                // Validar disponibilidad para cada fecha
+                const disponible = await validarDisponibilidad(
+                    profesionalId, 
+                    fecha, 
+                    horaInicio, 
+                    horaFin
                 );
-                console.log('Turno periódico creado:', turnoPeriodico.rows[0]);
+                if (!disponible) continue; // Saltar fechas no disponibles
 
-                // Validar disponibilidad para todas las fechas
-                const validacion = await validarDisponibilidadPeriodica(
+                // Crear turno individual
+                const turno = await TurnoModel.crearTurno({
                     profesionalId,
-                    fechaInicio,
-                    fechaFin,
+                    pacienteId,
+                    fecha,
                     horaInicio,
-                    horaFin,
-                    tipoPeriodicidad,
-                    diaSemana
-                );
-                console.log('Validación disponibilidad periódica:', validacion);
-
-                if (!validacion.disponible) {
-                    console.log('Conflictos detectados:', validacion.conflictos);
-                    return res.status(400).json({
-                        error: 'Existen conflictos en algunas fechas',
-                        conflictos: validacion.conflictos
-                    });
-                }
-
-                // Generar las instancias de turnos según la periodicidad
-                const fechasGeneradas = generarFechasTurnos(
-                    fechaInicio,
-                    fechaFin,
-                    tipoPeriodicidad,
-                    diaSemana
-                );
-                console.log('Fechas generadas para turnos:', fechasGeneradas);
-
-                // Crear los turnos individuales y sus relaciones
-                for (const fecha of fechasGeneradas) {
-                    // Validar disponibilidad para cada fecha
-                    const disponible = await validarDisponibilidad(
-                        profesionalId, 
-                        fecha, 
-                        horaInicio, 
-                        horaFin
-                    );
-                    console.log(`Fecha ${fecha}: disponible=${disponible}`);
-
-                    if (!disponible) {
-                        console.log(`Fecha ${fecha} no disponible, se omite.`);
-                        continue; // Saltar fechas no disponibles
-                    }
-
-                    // Crear turno individual usando la misma lógica que el turno simple
-                    const turno = await TurnoModel.crearTurno({
-                        profesionalId,
-                        pacienteId,
-                        fecha,
-                        horaInicio,
-                        horaFin
-                    });
-                    console.log('Turno individual creado:', turno);
-
-                    // Crear relación en turno_periodico_instancia
-                    await client.query(
-                        `INSERT INTO turno_periodico_instancia 
-                        (id_turno, id_turno_periodico)
-                        VALUES ($1, $2)`,
-                        [turno.id_turno, turnoPeriodico.rows[0].id_turno_periodico]
-                    );
-                    console.log(`Relación turno_periodico_instancia creada para turno ${turno.id_turno}`);
-
-                    // Enviar recordatorio por WhatsApp para cada turno individual
-                    try {
-                        const RecordatorioService = require('../services/recordatorioService');
-                        await RecordatorioService.crearRecordatorioConfirmacion(turno.id_turno);
-                    } catch (err) {
-                        console.error('Error al enviar recordatorio WhatsApp (turno periódico):', err);
-                    }
-                }
-
-                await client.query('COMMIT');
-                console.log('Transacción commit, turnos periódicos creados correctamente.');
-                res.status(201).json({
-                    mensaje: "Turno periódico creado exitosamente",
-                    turnoPeriodico: turnoPeriodico.rows[0]
+                    horaFin
                 });
-            } catch (error) {
-                await client.query('ROLLBACK');
-                console.error('Error en transacción, rollback ejecutado:', error);
-                throw error;
-            } finally {
-                client.release();
-            }
-        } catch (error) {
-            console.error('Error en TurnoPeriodicoController.crearTurnoPeriodico:', error);
-            res.status(500).json({ error: 'Error al crear el turno periódico' });
-        }
-        finally {
-            console.log('--- FIN crearTurnoPeriodico ---');
-        }
-    },
 
-    obtenerTurnosPeriodicosProfesional: async (req, res) => {
-        try {
-            const { id } = req.params;
-            
-            const resultado = await pool.query(
-                `SELECT tp.*, 
-                        u.nombre as paciente_nombre, 
-                        u.apellido as paciente_apellido,
-                        (SELECT COUNT(*) FROM turno_periodico_instancia tpi 
-                         JOIN turno t ON tpi.id_turno = t.id_turno 
-                         WHERE tpi.id_turno_periodico = tp.id_turno_periodico 
-                         AND t.estado = 'pendiente') as turnos_pendientes
-                 FROM turno_periodico tp
-                 JOIN paciente p ON tp.id_paciente = p.id_paciente
-                 JOIN usuario u ON p.id_paciente = u.id_usuario
-                 WHERE tp.id_profesional = $1 AND tp.estado = 'activo'
-                 ORDER BY tp.fecha_inicio`,
-                [id]
-            );
+                turnosPeriodicosParaMensaje.push({
+                    fecha: turno.fecha,
+                    hora_inicio: turno.hora_inicio,
+                    profesional_nombre: turno.profesional_nombre || '',
+                    profesional_apellido: turno.profesional_apellido || ''
+                });
 
-            res.json(resultado.rows);
-        } catch (error) {
-            console.error('Error en TurnoPeriodicoController.obtenerTurnosPeriodicosProfesional:', error);
-            res.status(500).json({ error: 'Error al obtener los turnos periódicos' });
-        }
-    },
-
-    obtenerTurnosPeriodicosPaciente: async (req, res) => {
-        try {
-            const { id } = req.params;
-            
-            const resultado = await pool.query(
-                `SELECT tp.*, 
-                        u.nombre as profesional_nombre, 
-                        u.apellido as profesional_apellido,
-                        (SELECT COUNT(*) FROM turno_periodico_instancia tpi 
-                         JOIN turno t ON tpi.id_turno = t.id_turno 
-                         WHERE tpi.id_turno_periodico = tp.id_turno_periodico 
-                         AND t.estado = 'pendiente') as turnos_pendientes
-                 FROM turno_periodico tp
-                 JOIN profesional p ON tp.id_profesional = p.id_profesional
-                 JOIN usuario u ON p.id_profesional = u.id_usuario
-                 WHERE tp.id_paciente = $1 AND tp.estado = 'activo'
-                 ORDER BY tp.fecha_inicio`,
-                [id]
-            );
-
-            res.json(resultado.rows);
-        } catch (error) {
-            console.error('Error en TurnoPeriodicoController.obtenerTurnosPeriodicosPaciente:', error);
-            res.status(500).json({ error: 'Error al obtener los turnos periódicos' });
-        }
-    },
-
-    cancelarTurnoPeriodico: async (req, res) => {
-        try {
-            const { id } = req.params;
-            const { cancelarSoloFuturos } = req.query;
-
-            const client = await pool.connect();
-            try {
-                await client.query('BEGIN');
-
-                // Actualizar estado del turno periódico
+                // Crear relación en turno_periodico_instancia
                 await client.query(
-                    'UPDATE turno_periodico SET estado = $1 WHERE id_turno_periodico = $2',
-                    ['cancelado', id]
+                    `INSERT INTO turno_periodico_instancia 
+                    (id_turno, id_turno_periodico)
+                    VALUES ($1, $2)`,
+                    [turno.id_turno, turnoPeriodico.rows[0].id_turno_periodico]
+                );
+            }
+
+            // Enviar mensaje grupal de confirmación
+            try {
+                const RecordatorioService = require('../services/recordatorioService');
+                const WhatsAppService = require('../services/whatsappService');
+
+                const pacienteRes = await pool.query(
+                    `SELECT nombre, apellido, telefono FROM usuario WHERE id_usuario = $1`,
+                    [pacienteId]
+                );
+                const profesionalRes = await pool.query(
+                    `SELECT nombre, apellido FROM usuario WHERE id_usuario = $1`,
+                    [profesionalId]
                 );
 
-                // Cancelar turnos individuales
-                if (cancelarSoloFuturos) {
-                    await client.query(
-                        `UPDATE turno t
-                         SET estado = 'cancelado'
-                         FROM turno_periodico_instancia tpi
-                         WHERE tpi.id_turno = t.id_turno
-                         AND tpi.id_turno_periodico = $1
-                         AND t.fecha > CURRENT_DATE`,
-                        [id]
-                    );
-                } else {
-                    await client.query(
-                        `UPDATE turno t
-                         SET estado = 'cancelado'
-                         FROM turno_periodico_instancia tpi
-                         WHERE tpi.id_turno = t.id_turno
-                         AND tpi.id_turno_periodico = $1`,
-                        [id]
+                const paciente = pacienteRes.rows[0];
+                const profesional = profesionalRes.rows[0];
+
+                let mensaje = `✅ *Turno Periódico Confirmado - MediGestion*\n\nHola ${paciente.nombre}!\n\nTus turnos han sido confirmados:\n\n👨‍⚕️ Profesional: ${profesional.nombre} ${profesional.apellido}\n\nFechas y horarios:`;
+                for (const t of turnosPeriodicosParaMensaje) {
+                    const fechaStr = new Date(t.fecha).toLocaleDateString('es-AR', {
+                        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+                    });
+                    mensaje += `\n  • ${fechaStr} - ${t.hora_inicio}`;
+                }
+                mensaje += `\n\nPor favor, llegá 10 minutos antes.\n\nSi necesitás cancelar o reprogramar, contactanos.`;
+
+                if (paciente.telefono) {
+                    await WhatsAppService.enviarMensaje(paciente.telefono, mensaje);
+                    await pool.query(
+                        `INSERT INTO recordatorio (id_turno, fecha_envio, mensaje, tipo, estado)
+                         VALUES ($1, NOW(), $2, $3, $4)`,
+                        [null, mensaje, 'periodico', 'enviado']
                     );
                 }
-
-                await client.query('COMMIT');
-                res.json({ mensaje: "Turno periódico cancelado exitosamente" });
-            } catch (error) {
-                await client.query('ROLLBACK');
-                throw error;
-            } finally {
-                client.release();
+            } catch (err) {
+                console.error('Error al enviar recordatorio WhatsApp grupal:', err);
             }
-        } catch (error) {
-            console.error('Error en TurnoPeriodicoController.cancelarTurnoPeriodico:', error);
-            res.status(500).json({ error: 'Error al cancelar el turno periódico' });
-        }
-    }
-};
 
-// Función auxiliar para generar las fechas según la periodicidad
+            await client.query('COMMIT');
+            res.status(201).json({
+                mensaje: "Turno periódico creado exitosamente",
+                turnoPeriodico: turnoPeriodico.rows[0]
+            });
+        } catch (error) {
+            await client.query('ROLLBACK');
+            throw error;
+        } finally {
+            client.release();
+        }
+    } catch (error) {
+        console.error('Error en crearTurnoPeriodico:', error);
+        res.status(500).json({ error: 'Error al crear el turno periódico' });
+    }
+}
+
+async function obtenerTurnosPeriodicosProfesional(req, res) {
+    try {
+        const { id } = req.params;
+        
+        const resultado = await pool.query(
+            `SELECT tp.*, 
+                    u.nombre as paciente_nombre, 
+                    u.apellido as paciente_apellido,
+                    (SELECT COUNT(*) FROM turno_periodico_instancia tpi 
+                     JOIN turno t ON tpi.id_turno = t.id_turno 
+                     WHERE tpi.id_turno_periodico = tp.id_turno_periodico 
+                     AND t.estado = 'pendiente') as turnos_pendientes
+             FROM turno_periodico tp
+             JOIN paciente p ON tp.id_paciente = p.id_paciente
+             JOIN usuario u ON p.id_paciente = u.id_usuario
+             WHERE tp.id_profesional = $1 AND tp.estado = 'activo'
+             ORDER BY tp.fecha_inicio`,
+            [id]
+        );
+
+        res.json(resultado.rows);
+    } catch (error) {
+        console.error('Error en obtenerTurnosPeriodicosProfesional:', error);
+        res.status(500).json({ error: 'Error al obtener los turnos periódicos' });
+    }
+}
+
+async function obtenerTurnosPeriodicosPaciente(req, res) {
+    try {
+        const { id } = req.params;
+        
+        const resultado = await pool.query(
+            `SELECT tp.*, 
+                    u.nombre as profesional_nombre, 
+                    u.apellido as profesional_apellido,
+                    (SELECT COUNT(*) FROM turno_periodico_instancia tpi 
+                     JOIN turno t ON tpi.id_turno = t.id_turno 
+                     WHERE tpi.id_turno_periodico = tp.id_turno_periodico 
+                     AND t.estado = 'pendiente') as turnos_pendientes
+             FROM turno_periodico tp
+             JOIN profesional p ON tp.id_profesional = p.id_profesional
+             JOIN usuario u ON p.id_profesional = u.id_usuario
+             WHERE tp.id_paciente = $1 AND tp.estado = 'activo'
+             ORDER BY tp.fecha_inicio`,
+            [id]
+        );
+
+        res.json(resultado.rows);
+    } catch (error) {
+        console.error('Error en obtenerTurnosPeriodicosPaciente:', error);
+        res.status(500).json({ error: 'Error al obtener los turnos periódicos' });
+    }
+}
+
+async function cancelarTurnoPeriodico(req, res) {
+    try {
+        const { id } = req.params;
+        const { cancelarSoloFuturos } = req.query;
+
+        const client = await pool.connect();
+        try {
+            await client.query('BEGIN');
+
+            await client.query(
+                'UPDATE turno_periodico SET estado = $1 WHERE id_turno_periodico = $2',
+                ['cancelado', id]
+            );
+
+            if (cancelarSoloFuturos) {
+                await client.query(
+                    `UPDATE turno t
+                     SET estado = 'cancelado'
+                     FROM turno_periodico_instancia tpi
+                     WHERE tpi.id_turno = t.id_turno
+                     AND tpi.id_turno_periodico = $1
+                     AND t.fecha > CURRENT_DATE`,
+                    [id]
+                );
+            } else {
+                await client.query(
+                    `UPDATE turno t
+                     SET estado = 'cancelado'
+                     FROM turno_periodico_instancia tpi
+                     WHERE tpi.id_turno = t.id_turno
+                     AND tpi.id_turno_periodico = $1`,
+                    [id]
+                );
+            }
+
+            await client.query('COMMIT');
+            res.json({ mensaje: "Turno periódico cancelado exitosamente" });
+        } catch (error) {
+            await client.query('ROLLBACK');
+            throw error;
+        } finally {
+            client.release();
+        }
+    } catch (error) {
+        console.error('Error en cancelarTurnoPeriodico:', error);
+        res.status(500).json({ error: 'Error al cancelar el turno periódico' });
+    }
+}
+
+// Función auxiliar
 function generarFechasTurnos(fechaInicio, fechaFin, tipoPeriodicidad, diaSemana) {
     const fechas = [];
     const inicio = new Date(fechaInicio);
     const fin = new Date(fechaFin);
     
-    // Mapear nombres de días a números (0 = Domingo, 1 = Lunes, etc.)
     const diasSemana = {
         'domingo': 0, 'lunes': 1, 'martes': 2, 'miercoles': 3,
         'jueves': 4, 'viernes': 5, 'sabado': 6
@@ -270,8 +283,6 @@ function generarFechasTurnos(fechaInicio, fechaFin, tipoPeriodicidad, diaSemana)
         } else {
             if (fecha.getDay() === diasSemana[diaSemana.toLowerCase()]) {
                 fechas.push(new Date(fecha));
-                
-                // Ajustar el incremento según la periodicidad
                 switch (tipoPeriodicidad) {
                     case 'semanal':
                         fecha.setDate(fecha.getDate() + 7);
@@ -288,8 +299,14 @@ function generarFechasTurnos(fechaInicio, fechaFin, tipoPeriodicidad, diaSemana)
         }
         fecha.setDate(fecha.getDate() + 1);
     }
-    
     return fechas;
 }
+
+const TurnoPeriodicoController = {
+    crearTurnoPeriodico,
+    obtenerTurnosPeriodicosProfesional,
+    obtenerTurnosPeriodicosPaciente,
+    cancelarTurnoPeriodico
+};
 
 module.exports = TurnoPeriodicoController;
