@@ -123,14 +123,11 @@ async function crearTurnoPeriodico(req, res) {
                 const paciente = pacienteRes.rows[0];
                 const profesional = profesionalRes.rows[0];
 
-                let mensaje = `✅ *Turno Periódico Confirmado - MediGestion*\n\nHola ${paciente.nombre}!\n\nTus turnos han sido confirmados:\n\n👨‍⚕️ Profesional: ${profesional.nombre} ${profesional.apellido}\n\nFechas y horarios:`;
-                for (const t of turnosPeriodicosParaMensaje) {
-                    const fechaStr = new Date(t.fecha).toLocaleDateString('es-AR', {
-                        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
-                    });
-                    mensaje += `\n  • ${fechaStr} - ${t.hora_inicio}`;
-                }
-                mensaje += `\n\nPor favor, llegá 10 minutos antes.\n\nSi necesitás cancelar o reprogramar, contactanos.`;
+                                let mensaje = WhatsAppService.generarMensajeConfirmacionPeriodico(
+                                    turnosPeriodicosParaMensaje,
+                                    paciente,
+                                    profesional
+                                );
 
                 if (paciente.telefono) {
                     await WhatsAppService.enviarMensaje(paciente.telefono, mensaje);

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import ConfirmacionTurnoModal from '../../components/turnos/ConfirmacionTurnoModal';
 import { toast } from 'sonner';
 import axios from 'axios';
 import BusquedaPaciente from '../../components/pacientes/BusquedaPaciente';
@@ -10,6 +11,8 @@ import { useAuthStore } from '../../stores/authStore';
 axios.defaults.baseURL = import.meta.env.VITE_API_URL;
 
 const NuevoTurnoPeriodico = () => {
+  const [modalAbierto, setModalAbierto] = useState(false);
+  const [configAConfirmar, setConfigAConfirmar] = useState(null);
   const [paso, setPaso] = useState(1);
   const [pacienteSeleccionado, setPacienteSeleccionado] = useState(null);
   const [profesionalSeleccionado, setProfesionalSeleccionado] = useState(null);
@@ -53,7 +56,8 @@ const NuevoTurnoPeriodico = () => {
 
   // Paso 4: Configuración de periodicidad
   const handleConfiguracionPeriodicidad = async (config) => {
-    await crearTurnoPeriodico(config);
+  setConfigAConfirmar(config);
+  setModalAbierto(true);
   };
 
   const crearTurnoPeriodico = async (config) => {
@@ -203,17 +207,28 @@ const NuevoTurnoPeriodico = () => {
             </div>
           )}
           {paso === 4 && fechaHoraSeleccionada && (
-            <div>
-              <h2 className="text-xl font-semibold mb-4">Configurar Periodicidad</h2>
-              <ConfiguracionPeriodicidad
-                onConfirmar={handleConfiguracionPeriodicidad}
-                fechaHoraInicial={fechaHoraSeleccionada}
-                loading={loading}
+            <>
+              <div>
+                <h2 className="text-xl font-semibold mb-4">Configurar Periodicidad</h2>
+                <ConfiguracionPeriodicidad
+                  onConfirmar={handleConfiguracionPeriodicidad}
+                  fechaHoraInicial={fechaHoraSeleccionada}
+                  loading={loading}
+                />
+                <button onClick={handleVolver} className="mt-4 px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300" disabled={loading}>
+                  Volver
+                </button>
+              </div>
+              <ConfirmacionTurnoModal
+                isOpen={modalAbierto}
+                onClose={() => setModalAbierto(false)}
+                onConfirm={async () => {
+                  setModalAbierto(false);
+                  await crearTurnoPeriodico(configAConfirmar);
+                }}
+                fecha={fechaHoraSeleccionada ? new Date(configAConfirmar?.fechaInicio + 'T' + fechaHoraSeleccionada.hora_inicio) : new Date()}
               />
-              <button onClick={handleVolver} className="mt-4 px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300" disabled={loading}>
-                Volver
-              </button>
-            </div>
+            </>
           )}
         </div>
       </div>

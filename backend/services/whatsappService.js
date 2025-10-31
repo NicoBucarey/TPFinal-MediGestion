@@ -2,6 +2,20 @@ const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
 
 class WhatsAppService {
+  /**
+   * Genera el mensaje de confirmación de turnos periódicos
+   */
+  generarMensajeConfirmacionPeriodico(turnos, paciente, profesional) {
+    let mensaje = `✅ *Turno Confirmado - MediGestion*\n\nHola ${paciente.nombre}!\n\nTus turnos han sido confirmados:\n\n👨‍⚕️ Profesional: ${profesional.nombre} ${profesional.apellido}\n`;
+    for (const t of turnos) {
+      const fechaStr = new Date(t.fecha).toLocaleDateString('es-AR', {
+        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+      });
+      mensaje += `\n📅 Fecha: ${fechaStr}  🕐 Hora: ${t.hora_inicio}`;
+    }
+    mensaje += `\n\nPor favor, llegá 10 minutos antes.\n\nSi necesitás cancelar o reprogramar, contactanos.`;
+    return mensaje;
+  }
   constructor() {
     this.client = null;
     this.isReady = false;
