@@ -62,7 +62,10 @@ const MisTurnos = () => {
                     <td className="px-6 py-4 text-sm">{t.estado || '—'}</td>
                     <td className="px-6 py-4 text-right">
                       {String(t.estado || '').toLowerCase() === 'confirmado' ? (
-                        <Link to={`/dashboard/profesional/nota/${t.id_turno}`} className="px-3 py-1.5 rounded-md bg-[#00796B] hover:bg-[#00695c] text-white text-sm">Registrar nota</Link>
+                        <div className="flex gap-2 justify-end">
+                          <Link to={`/dashboard/profesional/nota/${t.id_turno}`} className="px-3 py-1.5 rounded-md bg-[#00796B] hover:bg-[#00695c] text-white text-sm">Registrar nota</Link>
+                          <Link to={`/dashboard/profesional/turno/${t.id_turno}/seguimiento`} className="px-3 py-1.5 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-sm">Seguimiento</Link>
+                        </div>
                       ) : (
                         <span className="px-3 py-1.5 rounded-md bg-gray-100 text-gray-500 text-sm inline-block cursor-not-allowed">No disponible</span>
                       )}

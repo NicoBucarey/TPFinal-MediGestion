@@ -17,6 +17,8 @@ import HistorialPaciente from './pages/profesional/HistorialPaciente';
 import DocumentosCompartidos from './pages/profesional/DocumentosCompartidos';
 import HistoriasClinicas from './pages/profesional/HistoriasClinicas';
 import MisTurnos from './pages/profesional/MisTurnos';
+import ProgramarSeguimiento from './pages/profesional/ProgramarSeguimiento';
+import Seguimientos from './pages/profesional/Seguimientos';
 import ProtectedRoute from './components/ProtectedRoute';
 import useAuth from './hooks/useAuth';
 
@@ -125,6 +127,21 @@ function App() {
           <Route path="profesional/historias" element={
             <ProtectedRoute allowedRoles={['profesional']}>
               <HistoriasClinicas />
+            </ProtectedRoute>
+          } />
+          <Route path="profesional/seguimientos" element={
+            <ProtectedRoute allowedRoles={['profesional']}>
+              <Seguimientos />
+            </ProtectedRoute>
+          } />
+          <Route path="profesional/seguimiento/:id" element={
+            <ProtectedRoute allowedRoles={['profesional']}>
+              <HistorialPaciente />
+            </ProtectedRoute>
+          } />
+          <Route path="profesional/turno/:turnoId/seguimiento" element={
+            <ProtectedRoute allowedRoles={['profesional']}>
+              <ProgramarSeguimiento />
             </ProtectedRoute>
           } />
         </Route>
