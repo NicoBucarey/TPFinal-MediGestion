@@ -23,6 +23,7 @@ import BuscarProfesional from './pages/paciente/BuscarProfesional';
 import AgendaProfesional from './pages/paciente/AgendaProfesional';
 import SolicitarTurnoPeriodico from './pages/paciente/SolicitarTurnoPeriodico';
 import MisTurnosPaciente from './pages/paciente/MisTurnosPaciente';
+import MisDocumentos from './pages/paciente/MisDocumentos';
 import ProtectedRoute from './components/ProtectedRoute';
 import useAuth from './hooks/useAuth';
 
@@ -168,6 +169,11 @@ function App() {
           <Route path="paciente/turno-periodico/:profesionalId" element={
             <ProtectedRoute allowedRoles={['paciente']}>
               <SolicitarTurnoPeriodico />
+            </ProtectedRoute>
+          } />
+          <Route path="paciente/documentos" element={
+            <ProtectedRoute allowedRoles={['paciente']}>
+              <MisDocumentos />
             </ProtectedRoute>
           } />
         </Route>

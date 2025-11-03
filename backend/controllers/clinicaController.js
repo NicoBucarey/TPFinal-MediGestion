@@ -210,6 +210,44 @@ const ClinicaController = {
       console.error('Error toggleCompartirDocumento:', e);
       res.status(500).json({ message: 'Error al actualizar estado de documento' });
     }
+  },
+
+  // GET /api/clinica/documentos/compartidos - Para pacientes
+  obtenerDocumentosCompartidos: async (req, res) => {
+    const userId = req.user?.id;
+    const userRole = req.user?.rol?.toLowerCase();
+
+    if (userRole !== 'paciente') {
+      return res.status(403).json({ message: 'Solo pacientes pueden acceder a sus documentos compartidos' });
+    }
+
+    try {
+      const { tipo } = req.query;
+      let where = ' WHERE t.id_paciente = $1 AND d.compartido_con_paciente = true ';
+      const params = [userId];
+
+      if (tipo) {
+        where += ` AND d.tipo_documento = $${params.length + 1}`;
+        params.push(tipo);
+      }
+
+      const q = await pool.query(
+        `SELECT d.id_documento, d.tipo_documento, d.url, d.fecha, d.compartido_con_paciente,
+                ur.nombre || ' ' || ur.apellido as profesional,
+                t.id_turno, t.fecha as fecha_turno
+         FROM documento_medico d
+         JOIN turno t ON t.id_turno = d.id_turno
+         JOIN usuario ur ON ur.id_usuario = t.id_profesional
+         ${where}
+         ORDER BY d.fecha DESC`,
+        params
+      );
+
+      res.json(q.rows);
+    } catch (e) {
+      console.error('Error obtenerDocumentosCompartidos:', e);
+      res.status(500).json({ message: 'Error al obtener documentos compartidos' });
+    }
   }
 };
 

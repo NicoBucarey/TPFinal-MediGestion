@@ -16,6 +16,9 @@ router.get('/paciente/:id/historial', checkRole(['profesional', 'paciente']), Cl
 // Listado de documentos (profesional)
 router.get('/documentos', checkRole(['profesional']), ClinicaController.listarDocumentos);
 
+// Obtener documentos compartidos (paciente)
+router.get('/documentos/compartidos', checkRole(['paciente']), ClinicaController.obtenerDocumentosCompartidos);
+
 // Compartir/privatizar documento (profesional)
 router.patch('/documentos/:id/compartir', checkRole(['profesional']), ClinicaController.toggleCompartirDocumento);
 
