@@ -57,6 +57,34 @@ const TurnoModel = {
     }
   },
 
+  obtenerTurnosPaciente: async (pacienteId, fechaDesde, fechaHasta) => {
+    try {
+      const query = `
+        SELECT 
+          t.id_turno,
+          t.fecha,
+          t.hora_inicio,
+          t.hora_fin,
+          t.estado,
+          t.motivo_consulta,
+          prof.id_profesional,
+          u.nombre as profesional_nombre,
+          u.apellido as profesional_apellido
+        FROM turno t
+        JOIN profesional prof ON t.id_profesional = prof.id_profesional
+        JOIN usuario u ON prof.id_profesional = u.id_usuario
+        WHERE t.id_paciente = $1
+          AND t.fecha BETWEEN $2 AND $3
+        ORDER BY t.fecha ASC, t.hora_inicio ASC
+      `;
+      const result = await db.query(query, [pacienteId, fechaDesde, fechaHasta]);
+      return result.rows;
+    } catch (error) {
+      console.error('Error en TurnoModel.obtenerTurnosPaciente:', error);
+      throw error;
+    }
+  },
+
   crearTurno: async (turnoData) => {
     const { profesionalId, pacienteId, fecha, horaInicio, horaFin } = turnoData;
     
@@ -88,7 +116,7 @@ const TurnoModel = {
           hora_fin, 
           estado
         )
-        VALUES ($1, $2, $3, $4, $5, 'programado')
+        VALUES ($1, $2, $3, $4, $5, 'pendiente')
         RETURNING *
       `, [profesionalId, pacienteId, fecha, horaInicio, horaFin]);
 

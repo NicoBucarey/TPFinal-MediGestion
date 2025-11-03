@@ -19,6 +19,10 @@ import HistoriasClinicas from './pages/profesional/HistoriasClinicas';
 import MisTurnos from './pages/profesional/MisTurnos';
 import ProgramarSeguimiento from './pages/profesional/ProgramarSeguimiento';
 import Seguimientos from './pages/profesional/Seguimientos';
+import BuscarProfesional from './pages/paciente/BuscarProfesional';
+import AgendaProfesional from './pages/paciente/AgendaProfesional';
+import SolicitarTurnoPeriodico from './pages/paciente/SolicitarTurnoPeriodico';
+import MisTurnosPaciente from './pages/paciente/MisTurnosPaciente';
 import ProtectedRoute from './components/ProtectedRoute';
 import useAuth from './hooks/useAuth';
 
@@ -142,6 +146,28 @@ function App() {
           <Route path="profesional/turno/:turnoId/seguimiento" element={
             <ProtectedRoute allowedRoles={['profesional']}>
               <ProgramarSeguimiento />
+            </ProtectedRoute>
+          } />
+
+          {/* Rutas de paciente */}
+          <Route path="paciente/turnos" element={
+            <ProtectedRoute allowedRoles={['paciente']}>
+              <MisTurnosPaciente />
+            </ProtectedRoute>
+          } />
+          <Route path="paciente/buscar-profesional" element={
+            <ProtectedRoute allowedRoles={['paciente']}>
+              <BuscarProfesional />
+            </ProtectedRoute>
+          } />
+          <Route path="paciente/agenda/:profesionalId" element={
+            <ProtectedRoute allowedRoles={['paciente']}>
+              <AgendaProfesional />
+            </ProtectedRoute>
+          } />
+          <Route path="paciente/turno-periodico/:profesionalId" element={
+            <ProtectedRoute allowedRoles={['paciente']}>
+              <SolicitarTurnoPeriodico />
             </ProtectedRoute>
           } />
         </Route>
