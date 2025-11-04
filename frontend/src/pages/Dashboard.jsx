@@ -22,22 +22,97 @@ const Dashboard = () => {
               title: 'Gestión de Turnos',
               description: 'Administrar turnos y agenda',
               icon: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z',
-              to: '/dashboard/turnos/nuevo'
+              to: `${import.meta.env.VITE_DASHBOARD_BASE || ''}/dashboard/turnos/nuevo`
             },
             {
               title: 'Turnos Periódicos',
               description: 'Administrar turnos periódicos',
               icon: 'M12 8v4l3 3m6 0a9 9 0 11-18 0 9 9 0 0118 0z',
-              to: '/dashboard/turnos/periodico/nuevo'
+              to: `${import.meta.env.VITE_DASHBOARD_BASE || ''}/dashboard/turnos/periodico/nuevo`
+            },
+            {
+              title: 'Gestión de Pacientes',
+              description: 'Administrar pacientes',
+              icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z',
+              to: `${import.meta.env.VITE_DASHBOARD_BASE || ''}/dashboard/secretario/pacientes`
+            },
+            {
+              title: 'Agenda',
+              description: 'Ver y gestionar la agenda',
+              icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z',
+              to: `${import.meta.env.VITE_DASHBOARD_BASE || ''}/dashboard/secretario/agenda`
             }
           ];
       case 'profesional':
         return [
           {
-            title: 'Mis Consultas',
-            description: 'Ver agenda de consultas',
+            title: 'Mis Turnos',
+            description: 'Ver y gestionar tus turnos',
             icon: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z',
-            to: '/dashboard/consultas'
+            to: `${import.meta.env.VITE_DASHBOARD_BASE || ''}/dashboard/profesional/turnos`
+          },
+          {
+            title: 'Gestión de Disponibilidad',
+            description: 'Configura tu disponibilidad',
+            icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z',
+            to: `${import.meta.env.VITE_DASHBOARD_BASE || ''}/dashboard/disponibilidad`
+          },
+          {
+            title: 'Mis Pacientes',
+            description: 'Ver y gestionar tus pacientes',
+            icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z',
+            to: `${import.meta.env.VITE_DASHBOARD_BASE || ''}/dashboard/profesional/pacientes`
+          },
+          {
+            title: 'Historias Clínicas',
+            description: 'Accede a las historias clínicas',
+            icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
+            to: `${import.meta.env.VITE_DASHBOARD_BASE || ''}/dashboard/profesional/historias`
+          },
+          {
+            title: 'Seguimientos',
+            description: 'Gestiona los seguimientos post-consulta',
+            icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4',
+            to: `${import.meta.env.VITE_DASHBOARD_BASE || ''}/dashboard/profesional/seguimientos`
+          },
+          {
+            title: 'Documentos',
+            description: 'Accede a tus documentos médicos',
+            icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
+            to: `${import.meta.env.VITE_DASHBOARD_BASE || ''}/dashboard/profesional/documentos`
+          }
+        ];
+      case 'paciente':
+        return [
+          {
+            title: 'Mis Turnos',
+            description: 'Ver y gestionar tus turnos',
+            icon: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z',
+            to: `${import.meta.env.VITE_DASHBOARD_BASE || ''}/dashboard/paciente/turnos`
+          },
+          {
+            title: 'Buscar Profesional',
+            description: 'Encuentra y agenda con profesionales',
+            icon: 'M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z',
+            to: `${import.meta.env.VITE_DASHBOARD_BASE || ''}/dashboard/paciente/buscar-profesional`
+          },
+          {
+            title: 'Mis Seguimientos',
+            description: 'Gestiona tus seguimientos post-consulta',
+            icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4',
+            to: `${import.meta.env.VITE_DASHBOARD_BASE || ''}/dashboard/paciente/seguimientos`
+          },
+          {
+            title: 'Mis Documentos',
+            description: 'Accede a tus documentos médicos',
+            icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
+            to: `${import.meta.env.VITE_DASHBOARD_BASE || ''}/dashboard/paciente/documentos`
+          },
+          {
+            title: 'Mi Historia Clínica',
+            description: 'Consulta tu historia clínica',
+            icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
+            to: `${import.meta.env.VITE_DASHBOARD_BASE || ''}/dashboard/paciente/historia`
           }
         ];
       default:
