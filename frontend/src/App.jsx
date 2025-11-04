@@ -24,6 +24,7 @@ import AgendaProfesional from './pages/paciente/AgendaProfesional';
 import SolicitarTurnoPeriodico from './pages/paciente/SolicitarTurnoPeriodico';
 import MisTurnosPaciente from './pages/paciente/MisTurnosPaciente';
 import MisDocumentos from './pages/paciente/MisDocumentos';
+import MisSeguimientos from './pages/paciente/MisSeguimientos';
 import ProtectedRoute from './components/ProtectedRoute';
 import useAuth from './hooks/useAuth';
 
@@ -174,6 +175,11 @@ function App() {
           <Route path="paciente/documentos" element={
             <ProtectedRoute allowedRoles={['paciente']}>
               <MisDocumentos />
+            </ProtectedRoute>
+          } />
+          <Route path="paciente/seguimientos" element={
+            <ProtectedRoute allowedRoles={['paciente']}>
+              <MisSeguimientos />
             </ProtectedRoute>
           } />
         </Route>
