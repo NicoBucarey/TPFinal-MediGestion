@@ -11,6 +11,9 @@ router.get('/profesional/:id', checkRole(['profesional']), SeguimientoController
 // Estadísticas del profesional
 router.get('/profesional/:id/estadisticas', checkRole(['profesional']), SeguimientoController.obtenerEstadisticasProfesional);
 
+// Listar seguimientos del paciente
+router.get('/paciente/:id', checkRole(['paciente']), SeguimientoController.obtenerSeguimientosPaciente);
+
 // Detalle de seguimiento
 router.get('/:id', checkRole(['profesional', 'paciente']), SeguimientoController.obtenerSeguimientoDetalle);
 

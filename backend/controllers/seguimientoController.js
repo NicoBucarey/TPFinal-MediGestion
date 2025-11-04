@@ -98,12 +98,55 @@ const SeguimientoController = {
         params.push(estado);
       }
 
-      query += ` ORDER BY s.fecha_inicio DESC`;
-
+      query += ' ORDER BY s.fecha_inicio DESC';
       const result = await pool.query(query, params);
       res.json(result.rows);
     } catch (error) {
       console.error('Error obtenerSeguimientosProfesional:', error);
+      res.status(500).json({ message: 'Error al obtener seguimientos' });
+    }
+  },
+
+  // GET /api/seguimiento/paciente/:id - Listar seguimientos del paciente
+  obtenerSeguimientosPaciente: async (req, res) => {
+    const { id } = req.params;
+    const userId = req.user?.id;
+    const userRole = req.user?.rol?.toLowerCase();
+
+    if (userRole !== 'paciente' || Number(id) !== userId) {
+      return res.status(403).json({ message: 'No autorizado' });
+    }
+
+    try {
+      const query = `
+        SELECT 
+          s.*,
+          up.nombre || ' ' || up.apellido as nombre_profesional,
+          t.fecha as turno_fecha,
+          EXISTS(
+            SELECT 1 FROM respuesta_seguimiento rs 
+            WHERE rs.id_seguimiento = s.id_seguimiento 
+            AND rs.id_paciente = s.id_paciente
+          ) as tiene_respuestas
+        FROM seguimiento s
+        JOIN turno t ON t.id_turno = s.id_turno
+        LEFT JOIN profesional prof ON prof.id_profesional = s.id_profesional
+        LEFT JOIN usuario up ON up.id_usuario = prof.id_profesional
+        WHERE s.id_paciente = $1
+        ORDER BY 
+          CASE s.estado
+            WHEN 'pendiente' THEN 1
+            WHEN 'en_curso' THEN 2
+            WHEN 'vencido' THEN 3
+            WHEN 'completado' THEN 4
+          END,
+          s.fecha_inicio DESC
+      `;
+
+      const result = await pool.query(query, [id]);
+      res.json(result.rows);
+    } catch (error) {
+      console.error('Error obtenerSeguimientosPaciente:', error);
       res.status(500).json({ message: 'Error al obtener seguimientos' });
     }
   },

@@ -11,6 +11,7 @@ const adminRoutes = require('./routes/adminRoutes');
 const clinicaRoutes = require('./routes/clinicaRoutes');
 const seguimientoRoutes = require('./routes/seguimientoRoutes');
 const notificacionRoutes = require('./routes/notificacionRoutes');
+const respuestaSeguimientoRoutes = require('./routes/respuestaSeguimientoRoutes');
 const path = require('path');
 const { inicializarCronJobs } = require('./jobs/cronJobs');
 
@@ -40,6 +41,7 @@ app.use('/api/admin', authMiddleware, adminRoutes);
 app.use('/api/clinica', authMiddleware, clinicaRoutes);
 app.use('/api/seguimiento', authMiddleware, seguimientoRoutes);
 app.use('/api/notificaciones', authMiddleware, notificacionRoutes);
+app.use('/api', authMiddleware, respuestaSeguimientoRoutes);
 
 // Crear usuario administrador inicial
 authController.createInitialAdmin();
