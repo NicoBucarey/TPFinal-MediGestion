@@ -1,16 +1,32 @@
+.fc-non-business {
+  background-color: rgba(117, 117, 117, 0.7) !important;
+}
 .fc-bg-event {
-  opacity: 0.3 !important;
-  background-color: #ff0000 !important;
-  border: 1px solid #cc0000 !important;
+  opacity: 0.7 !important;
+  background-color: #d32f2f !important;
+  border: 1px solid #b71c1c !important;
+  color: #fff !important;
+  font-weight: bold;
+  font-size: 1.1em;
+  text-shadow: 0 1px 2px #00000033;
 }
 
 .fc-timegrid-event {
-  background-color: rgba(255, 0, 0, 0.3) !important;
-  border-color: #cc0000 !important;
+  background-color: #d32f2f !important;
+  border-color: #b71c1c !important;
+  color: #fff !important;
+  font-weight: bold;
+  font-size: 1.1em;
 }
+
 
 .fc-timegrid-slot {
   height: 30px !important;
+}
+
+/* Oscurecer los días no disponibles */
+.fc-timegrid-col.fc-day-disabled, .fc-timegrid-col.fc-day-unavailable {
+  background-color: #888888 !important;
 }
 
 .fc-timegrid-slot-label {
