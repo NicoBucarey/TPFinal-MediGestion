@@ -15,6 +15,9 @@ const RecordatorioService = {
                     t.fecha,
                     t.hora_inicio,
                     t.hora_fin,
+                    t.tipo,
+                    t.link_reunion,
+                    t.plataforma,
                     p.nombre as paciente_nombre,
                     p.apellido as paciente_apellido,
                     p.telefono as paciente_telefono,
@@ -34,22 +37,42 @@ const RecordatorioService = {
 
             const turno = result.rows[0];
             
-            // Generar mensaje personalizado
-            const mensaje = WhatsAppService.generarMensajeConfirmacion(
-                {
-                    fecha: turno.fecha,
-                    hora_inicio: turno.hora_inicio,
-                    hora_fin: turno.hora_fin
-                },
-                {
-                    nombre: turno.paciente_nombre,
-                    apellido: turno.paciente_apellido
-                },
-                {
-                    nombre: turno.profesional_nombre,
-                    apellido: turno.profesional_apellido
-                }
-            );
+            // Generar mensaje personalizado según el tipo de consulta
+            let mensaje;
+            if (turno.tipo === 'teleconsulta') {
+                mensaje = WhatsAppService.generarMensajeTeleconsulta(
+                    {
+                        fecha: turno.fecha,
+                        hora_inicio: turno.hora_inicio,
+                        hora_fin: turno.hora_fin
+                    },
+                    {
+                        nombre: turno.paciente_nombre,
+                        apellido: turno.paciente_apellido
+                    },
+                    {
+                        nombre: turno.profesional_nombre,
+                        apellido: turno.profesional_apellido
+                    },
+                    turno.link_reunion
+                );
+            } else {
+                mensaje = WhatsAppService.generarMensajeConfirmacion(
+                    {
+                        fecha: turno.fecha,
+                        hora_inicio: turno.hora_inicio,
+                        hora_fin: turno.hora_fin
+                    },
+                    {
+                        nombre: turno.paciente_nombre,
+                        apellido: turno.paciente_apellido
+                    },
+                    {
+                        nombre: turno.profesional_nombre,
+                        apellido: turno.profesional_apellido
+                    }
+                );
+            }
 
             // Crear recordatorio en la BD
             const recordatorio = await pool.query(

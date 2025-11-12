@@ -35,8 +35,15 @@ const TeleconsultaController = {
 
       console.log('Teleconsulta creada:', teleconsulta);
 
-      // TODO: Enviar enlaces de reunión por email y WhatsApp
-      // Esto se implementará más adelante
+      // Enviar recordatorio por WhatsApp (no bloqueante)
+      setImmediate(async () => {
+        try {
+          const RecordatorioService = require('../services/recordatorioService');
+          await RecordatorioService.crearRecordatorioConfirmacion(teleconsulta.id_turno);
+        } catch (err) {
+          console.error('Error al enviar recordatorio WhatsApp para teleconsulta (no crítico):', err.message);
+        }
+      });
 
       res.status(201).json({
         message: 'Teleconsulta creada exitosamente',
