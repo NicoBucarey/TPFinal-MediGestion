@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useEffect } from 'react';
 import { Toaster } from 'sonner';
 import MainLayout from './layouts/MainLayout';
@@ -34,11 +34,60 @@ function App() {
   useEffect(() => {
     checkAuth();
   }, []);
+  
+  // Títulos por ruta
+  const TitleManager = () => {
+    const location = useLocation();
+    useEffect(() => {
+      const path = location.pathname;
+      const map = [
+        // Públicas
+        { re: /^\/$/, title: 'inicio' },
+        { re: /^\/login$/, title: 'iniciar sesión' },
+        { re: /^\/register$/, title: 'crear cuenta' },
+        { re: /^\/dashboard\/?$/, title: 'dashboard' },
+
+        // Admin
+        { re: /^\/dashboard\/admin$/, title: 'dashboard' },
+        { re: /^\/dashboard\/admin\/users$/, title: 'usuarios' },
+        { re: /^\/dashboard\/admin\/reports$/, title: 'reportes' },
+
+        // Secretaría / Turnos
+        { re: /^\/dashboard\/turnos\/nuevo$/, title: 'nuevo turno' },
+        { re: /^\/dashboard\/turnos\/periodico\/nuevo$/, title: 'turno periódico' },
+
+        // Profesional
+        { re: /^\/dashboard\/disponibilidad$/, title: 'disponibilidad' },
+        { re: /^\/dashboard\/profesional\/turnos$/, title: 'mis turnos' },
+        { re: /^\/dashboard\/profesional\/nota\/.+$/, title: 'nota clínica' },
+        { re: /^\/dashboard\/profesional\/paciente\/.+\/historial$/, title: 'historial del paciente' },
+        { re: /^\/dashboard\/profesional\/documentos$/, title: 'documentos' },
+        { re: /^\/dashboard\/profesional\/historias$/, title: 'historias clínicas' },
+        { re: /^\/dashboard\/profesional\/seguimientos$/, title: 'seguimientos' },
+        { re: /^\/dashboard\/profesional\/seguimiento\/.+$/, title: 'seguimiento' },
+        { re: /^\/dashboard\/profesional\/turno\/.+\/seguimiento$/, title: 'programar seguimiento' },
+
+        // Paciente
+        { re: /^\/dashboard\/paciente\/turnos$/, title: 'mis turnos' },
+        { re: /^\/dashboard\/paciente\/buscar-profesional$/, title: 'buscar profesional' },
+        { re: /^\/dashboard\/paciente\/agenda\/.+$/, title: 'agenda' },
+        { re: /^\/dashboard\/paciente\/turno-periodico\/.+$/, title: 'turno periódico' },
+        { re: /^\/dashboard\/paciente\/documentos$/, title: 'documentos' },
+        { re: /^\/dashboard\/paciente\/seguimientos$/, title: 'mis seguimientos' },
+        { re: /^\/dashboard\/paciente\/historia$/, title: 'mi historia clínica' },
+      ];
+
+      const match = map.find(m => m.re.test(path));
+      document.title = match ? match.title : 'MediGestión';
+    }, [location.pathname]);
+    return null;
+  };
 //me podrias explicar la logica de este codigo? 
   // Este código es un componente principal de una aplicación React que utiliza React Router para la gestión de rutas.
   // La función checkAuth se llama en un efecto secundario (useEffect) cuando el componente se monta, lo que sugiere que está verificando el estado de autenticación del usuario. Luego, el componente devuelve una estructura de rutas que define las diferentes páginas y componentes que se renderizan según la URL actual. 
   return (
     <BrowserRouter>
+      <TitleManager />
       <Toaster richColors closeButton position="top-right" />
       <Routes>
         {/* Rutas públicas */}
