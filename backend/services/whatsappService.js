@@ -165,6 +165,38 @@ Por favor, llegá 10 minutos antes.
 
 Nos vemos mañana!`;
   }
+
+  /**
+   * Genera el mensaje de confirmación de teleconsulta
+   */
+  generarMensajeTeleconsulta(turno, paciente, profesional, linkReunion) {
+    const fecha = new Date(turno.fecha).toLocaleDateString('es-AR', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+
+    return `🎥 *Teleconsulta Confirmada - MediGestion*
+
+Hola ${paciente.nombre}!
+
+Tu teleconsulta ha sido confirmada:
+
+👨‍⚕️ Profesional: ${profesional.nombre} ${profesional.apellido}
+📅 Fecha: ${fecha}
+🕐 Hora: ${turno.hora_inicio}
+
+🔗 *Enlace de reunión:*
+${linkReunion}
+
+📋 *Instrucciones:*
+• Conectate 5 minutos antes
+• Asegurate de tener buena conexión a internet
+• Tené a mano tu documento y estudios médicos
+
+¡Nos vemos virtualmente!`;
+  }
 }
 
 module.exports = new WhatsAppService();

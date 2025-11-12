@@ -86,7 +86,16 @@ const TurnoModel = {
   },
 
   crearTurno: async (turnoData) => {
-    const { profesionalId, pacienteId, fecha, horaInicio, horaFin } = turnoData;
+    const { 
+      profesionalId, 
+      pacienteId, 
+      fecha, 
+      horaInicio, 
+      horaFin, 
+      tipo = 'presencial',
+      linkReunion = null,
+      plataforma = null 
+    } = turnoData;
     
     try {
       // Primero verificamos que el horario esté disponible
@@ -114,11 +123,14 @@ const TurnoModel = {
           fecha, 
           hora_inicio, 
           hora_fin, 
-          estado
+          estado,
+          tipo,
+          link_reunion,
+          plataforma
         )
-        VALUES ($1, $2, $3, $4, $5, 'pendiente')
+        VALUES ($1, $2, $3, $4, $5, 'pendiente', $6, $7, $8)
         RETURNING *
-      `, [profesionalId, pacienteId, fecha, horaInicio, horaFin]);
+      `, [profesionalId, pacienteId, fecha, horaInicio, horaFin, tipo, linkReunion, plataforma]);
 
       return result.rows[0];
     } catch (error) {

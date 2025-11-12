@@ -19,7 +19,7 @@ const getDayNumber = (dia) => {
   return dias[dia.toLowerCase()];
 };
 
-const CalendarioTurnos = ({ onTurnoSelect, profesionalId }) => {
+const CalendarioTurnos = ({ onTurnoSelect, profesionalId, tipoConsulta = 'presencial' }) => {
   const [eventos, setEventos] = useState([]);
   const [horariosProfesional, setHorariosProfesional] = useState(null);
   const [loading, setLoading] = useState(true);

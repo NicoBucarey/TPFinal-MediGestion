@@ -5,6 +5,7 @@ const { authMiddleware, adminMiddleware } = require('./middleware/auth');
 const pacienteRoutes = require('./routes/pacienteRoutes');
 const turnoRoutes = require('./routes/turnoRoutes');
 const turnoPeriodicoRoutes = require('./routes/turnoPeriodicoRoutes');
+const teleconsultaRoutes = require('./routes/teleconsultaRoutes');
 const profesionalRoutes = require('./routes/profesionalRoutes');
 const disponibilidadRoutes = require('./routes/disponibilidadRoutes');
 const adminRoutes = require('./routes/adminRoutes');
@@ -35,6 +36,7 @@ app.post('/api/users/staff', [authMiddleware, adminMiddleware], authController.c
 app.use('/api/pacientes', authMiddleware, pacienteRoutes);
 app.use('/api/turnos', authMiddleware, turnoRoutes);
 app.use('/api/turnos-periodicos', authMiddleware, turnoPeriodicoRoutes);
+app.use('/api/teleconsultas', authMiddleware, teleconsultaRoutes);
 app.use('/api/profesionales', authMiddleware, profesionalRoutes);
 app.use('/api/disponibilidad', authMiddleware, disponibilidadRoutes);
 app.use('/api/admin', authMiddleware, adminRoutes);

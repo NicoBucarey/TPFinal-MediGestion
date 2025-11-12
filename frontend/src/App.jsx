@@ -11,6 +11,7 @@ import Reportes from './pages/admin/Reportes';
 import GestionUsuarios from './pages/usuarios/GestionUsuarios';
 import NuevoTurno from './pages/turnos/NuevoTurno';
 import NuevoTurnoPeriodico from './pages/turnos/NuevoTurnoPeriodico';
+import NuevaTeleconsulta from './pages/teleconsultas/NuevaTeleconsulta';
 import GestionDisponibilidad from './pages/disponibilidad/GestionDisponibilidad';
 import NotaClinica from './pages/profesional/NotaClinica';
 import HistorialPaciente from './pages/profesional/HistorialPaciente';
@@ -22,6 +23,7 @@ import Seguimientos from './pages/profesional/Seguimientos';
 import BuscarProfesional from './pages/paciente/BuscarProfesional';
 import AgendaProfesional from './pages/paciente/AgendaProfesional';
 import SolicitarTurnoPeriodico from './pages/paciente/SolicitarTurnoPeriodico';
+import SolicitarTeleconsulta from './pages/paciente/SolicitarTeleconsulta';
 import MisTurnosPaciente from './pages/paciente/MisTurnosPaciente';
 import MisDocumentos from './pages/paciente/MisDocumentos';
 import MisSeguimientos from './pages/paciente/MisSeguimientos';
@@ -93,6 +95,12 @@ function App() {
           <Route path="turnos/periodico/nuevo" element={
             <ProtectedRoute allowedRoles={['secretario']}>
               <NuevoTurnoPeriodico />
+            </ProtectedRoute>
+          } />
+
+          <Route path="teleconsultas/nueva" element={
+            <ProtectedRoute allowedRoles={['secretario']}>
+              <NuevaTeleconsulta />
             </ProtectedRoute>
           } />
 
@@ -170,6 +178,11 @@ function App() {
           <Route path="paciente/turno-periodico/:profesionalId" element={
             <ProtectedRoute allowedRoles={['paciente']}>
               <SolicitarTurnoPeriodico />
+            </ProtectedRoute>
+          } />
+          <Route path="paciente/teleconsulta" element={
+            <ProtectedRoute allowedRoles={['paciente']}>
+              <SolicitarTeleconsulta />
             </ProtectedRoute>
           } />
           <Route path="paciente/documentos" element={
