@@ -7,6 +7,9 @@ import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import Dashboard from './pages/Dashboard';
 import DashboardAdmin from './pages/admin/DashboardAdmin';
+import DashboardProfesional from './pages/profesional/DashboardProfesional';
+import DashboardSecretario from './pages/secretario/DashboardSecretario';
+import DashboardPaciente from './pages/paciente/DashboardPaciente';
 import Reportes from './pages/admin/Reportes';
 import GestionUsuarios from './pages/usuarios/GestionUsuarios';
 import NuevoTurno from './pages/turnos/NuevoTurno';
@@ -53,10 +56,12 @@ function App() {
         { re: /^\/dashboard\/admin\/reports$/, title: 'reportes' },
 
         // Secretaría / Turnos
+        { re: /^\/dashboard\/secretario$/, title: 'dashboard' },
         { re: /^\/dashboard\/turnos\/nuevo$/, title: 'nuevo turno' },
         { re: /^\/dashboard\/turnos\/periodico\/nuevo$/, title: 'turno periódico' },
 
         // Profesional
+        { re: /^\/dashboard\/profesional$/, title: 'dashboard' },
         { re: /^\/dashboard\/disponibilidad$/, title: 'disponibilidad' },
         { re: /^\/dashboard\/profesional\/turnos$/, title: 'mis turnos' },
         { re: /^\/dashboard\/profesional\/nota\/.+$/, title: 'nota clínica' },
@@ -68,6 +73,7 @@ function App() {
         { re: /^\/dashboard\/profesional\/turno\/.+\/seguimiento$/, title: 'programar seguimiento' },
 
         // Paciente
+        { re: /^\/dashboard\/paciente$/, title: 'dashboard' },
         { re: /^\/dashboard\/paciente\/turnos$/, title: 'mis turnos' },
         { re: /^\/dashboard\/paciente\/buscar-profesional$/, title: 'buscar profesional' },
         { re: /^\/dashboard\/paciente\/agenda\/.+$/, title: 'agenda' },
@@ -122,6 +128,27 @@ function App() {
           <Route path="admin/reports" element={
             <ProtectedRoute allowedRoles={['admin']}>
               <Reportes />
+            </ProtectedRoute>
+          } />
+
+          {/* Rutas de Secretario */}
+          <Route path="secretario" element={
+            <ProtectedRoute allowedRoles={['secretario']}>
+              <DashboardSecretario />
+            </ProtectedRoute>
+          } />
+
+          {/* Rutas de Profesional */}
+          <Route path="profesional" element={
+            <ProtectedRoute allowedRoles={['profesional']}>
+              <DashboardProfesional />
+            </ProtectedRoute>
+          } />
+
+          {/* Rutas de Paciente */}
+          <Route path="paciente" element={
+            <ProtectedRoute allowedRoles={['paciente']}>
+              <DashboardPaciente />
             </ProtectedRoute>
           } />
 
