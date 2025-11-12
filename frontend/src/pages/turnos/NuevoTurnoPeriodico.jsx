@@ -113,8 +113,29 @@ const NuevoTurnoPeriodico = () => {
       console.error('Error al crear turno periódico:', error);
       if (error.response) {
         console.error('Respuesta error backend:', error.response.data);
+        
+        // Manejar conflictos específicamente
+        if (error.response.data.conflictos && error.response.data.conflictos.length > 0) {
+          const conflictos = error.response.data.conflictos;
+          let mensaje = 'Conflictos encontrados en las siguientes fechas:\n\n';
+          
+          conflictos.forEach((conflicto, index) => {
+            const fecha = new Date(conflicto.fecha).toLocaleDateString('es-ES');
+            const hora = conflicto.hora_inicio;
+            mensaje += `• ${fecha} a las ${hora}\n`;
+          });
+          
+          mensaje += '\nPor favor, elija otro horario o fechas diferentes.';
+          toast.error(mensaje, {
+            duration: 8000,
+            style: { whiteSpace: 'pre-line' }
+          });
+        } else {
+          toast.error(error.response.data.error || 'Error al crear los turnos periódicos');
+        }
+      } else {
+        toast.error('Error de conexión con el servidor');
       }
-      toast.error(error.response?.data?.error || 'Error al crear los turnos periódicos');
     } finally {
       setLoading(false);
       console.log('--- FIN crearTurnoPeriodico FRONTEND ---');

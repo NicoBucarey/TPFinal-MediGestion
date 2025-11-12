@@ -7,15 +7,15 @@ const { authMiddleware, checkRole } = require('../middleware/auth');
 // Todas las rutas usan authMiddleware para asegurar la autenticación
 
 // Crear un nuevo turno periódico
-router.post('/', authMiddleware, checkRole(['secretario', 'paciente']), TurnoPeriodicoController.crearTurnoPeriodico);
+router.post('/', checkRole(['secretario', 'paciente']), TurnoPeriodicoController.crearTurnoPeriodico);
 
 // Obtener turnos periódicos de un profesional
-router.get('/profesional/:id', authMiddleware, checkRole(['secretario', 'profesional']), TurnoPeriodicoController.obtenerTurnosPeriodicosProfesional);
+router.get('/profesional/:id', checkRole(['secretario', 'profesional']), TurnoPeriodicoController.obtenerTurnosPeriodicosProfesional);
 
 // Obtener turnos periódicos de un paciente
-router.get('/paciente/:id', authMiddleware, checkRole(['secretario', 'profesional', 'paciente']), TurnoPeriodicoController.obtenerTurnosPeriodicosPaciente);
+router.get('/paciente/:id', checkRole(['secretario', 'profesional', 'paciente']), TurnoPeriodicoController.obtenerTurnosPeriodicosPaciente);
 
 // Cancelar un turno periódico (con opción de cancelar solo futuros mediante query param ?cancelarSoloFuturos=true)
-router.delete('/:id', authMiddleware, checkRole(['secretario', 'paciente']), TurnoPeriodicoController.cancelarTurnoPeriodico);
+router.delete('/:id', checkRole(['secretario', 'paciente']), TurnoPeriodicoController.cancelarTurnoPeriodico);
 
 module.exports = router;
