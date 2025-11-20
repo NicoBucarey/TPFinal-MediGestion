@@ -20,7 +20,7 @@ const Header = ({ className = '' }) => {
             {isAuthenticated ? (
               <div className="flex items-center space-x-4">
                 <Link
-                  to="/perfil"
+                  to="/dashboard/perfil"
                   className="text-secondary-dark hover:text-primary transition-colors duration-200 text-sm font-medium"
                 >
                   {user?.nombre} {user?.apellido}

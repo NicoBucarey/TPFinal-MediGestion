@@ -127,11 +127,20 @@ const authController = {
   // Crear usuario profesional o secretario (solo admin)
   async createStaffUser(req, res) {
     try {
-      const { nombre, apellido, telefono, email, password, rol, profesion, especialidad } = req.body;
+      const { nombre, apellido, telefono, email, password, rol, profesion, especialidad, id_sucursal } = req.body;
       
       // Verificar que el rol sea válido
       if (!['profesional', 'secretario'].includes(rol)) {
         return res.status(400).json({ message: 'Rol inválido' });
+      }
+
+      // Validar sucursal
+      if (!id_sucursal) {
+        return res.status(400).json({ message: 'id_sucursal es requerido' });
+      }
+      const sucursalCheck = await pool.query('SELECT id_sucursal FROM sucursal WHERE id_sucursal = $1 AND activa = true', [id_sucursal]);
+      if (sucursalCheck.rows.length === 0) {
+        return res.status(400).json({ message: 'Sucursal inválida o inactiva' });
       }
 
       // Verificar que el email no exista
@@ -171,10 +180,9 @@ const authController = {
 
         // Si es profesional, insertar datos adicionales
         if (rol === 'profesional') {
-          // Insertar datos del profesional
           await client.query(
-            'INSERT INTO profesional (id_profesional, profesion, especialidad) VALUES ($1, $2, $3)',
-            [userId, profesion, especialidad]
+            'INSERT INTO profesional (id_profesional, profesion, especialidad, id_sucursal) VALUES ($1, $2, $3, $4)',
+            [userId, profesion, especialidad, id_sucursal]
           );
 
           // Insertar horarios por defecto para el profesional
@@ -185,6 +193,8 @@ const authController = {
               [userId, dia, '08:00', '20:00', 30, 0, true]
             );
           }
+        } else if (rol === 'secretario') {
+          // Para secretario podemos opcionalmente insertar en una tabla si luego se añade (no existe ahora). No hacemos nada extra.
         }
 
         await client.query('COMMIT');
@@ -233,6 +243,7 @@ const authController = {
         return res.status(400).json({ message: 'El DNI ya está registrado' });
       }
 
+
       // Obtener el id del rol paciente
       const roleResult = await pool.query(
         'SELECT id_rol FROM rol WHERE nombre = $1',
@@ -258,7 +269,7 @@ const authController = {
 
         const userId = userResult.rows[0].id_usuario;
 
-        // Insertar paciente
+        // Insertar paciente (sin sucursal especificada)
         await client.query(
           'INSERT INTO paciente (id_paciente, fecha_nac, dni) VALUES ($1, $2, $3)',
           [userId, fechaNacimiento, dni]

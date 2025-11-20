@@ -23,21 +23,16 @@ const DashboardProfesional = () => {
 
   const cargarDatos = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+      // TODO: Implementar endpoints en backend
+      // const token = localStorage.getItem('token');
+      // const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
       
-      // Cargar estadísticas del profesional
-      const [statsRes, turnosRes] = await Promise.all([
-        axios.get(`${API_URL}/profesional/estadisticas`, {
-          headers: { Authorization: `Bearer ${token}` }
-        }),
-        axios.get(`${API_URL}/profesional/turnos/hoy`, {
-          headers: { Authorization: `Bearer ${token}` }
-        })
-      ]);
-      
-      setEstadisticas(statsRes.data);
-      setTurnosHoy(turnosRes.data);
+      setEstadisticas({
+        turnosMes: 0,
+        totalPacientes: 0,
+        seguimientosPendientes: 0
+      });
+      setTurnosHoy([]);
     } catch (error) {
       console.error('Error al cargar datos:', error);
     } finally {

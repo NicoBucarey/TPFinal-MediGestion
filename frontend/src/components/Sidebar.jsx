@@ -18,6 +18,11 @@ const Sidebar = ({ className = "w-64" }) => {
         label: 'Gestión de Usuarios',
         icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z'
       },
+      {
+        to: '/dashboard/admin/sucursales',
+        label: 'Sucursales',
+        icon: 'M4 7h16M4 11h16M4 15h16M4 19h16' // simple list icon
+      },
       { 
         to: '/dashboard/admin/reports', 
         label: 'Reportes',
@@ -39,6 +44,11 @@ const Sidebar = ({ className = "w-64" }) => {
         to: '/dashboard/teleconsultas/nueva',
         label: 'Teleconsultas',
         icon: 'M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 002 2v8a2 2 0 002 2z'
+      },
+      { 
+        to: '/dashboard/perfil', 
+        label: 'Mi Perfil',
+        icon: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z'
       }
     ],
     profesional: [
@@ -66,6 +76,11 @@ const Sidebar = ({ className = "w-64" }) => {
         to: '/dashboard/profesional/documentos', 
         label: 'Documentos',
         icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z'
+      },
+      { 
+        to: '/dashboard/perfil', 
+        label: 'Mi Perfil',
+        icon: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z'
       }
     ],
     paciente: [
@@ -98,6 +113,11 @@ const Sidebar = ({ className = "w-64" }) => {
         to: '/dashboard/paciente/teleconsulta',
         label: 'Teleconsultas',
         icon: 'M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 002 2v8a2 2 0 002 2z'
+      },
+      { 
+        to: '/dashboard/perfil', 
+        label: 'Mi Perfil',
+        icon: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z'
       }
     ]
   };
