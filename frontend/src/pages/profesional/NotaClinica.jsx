@@ -17,8 +17,20 @@ const NotaClinica = () => {
   const [nota, setNota] = useState('');
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [notasPrevias, setNotasPrevias] = useState([]);
+  const [loadingHistorial, setLoadingHistorial] = useState(false);
+  const [modalDetalle, setModalDetalle] = useState({ visible: false, nota: null });
   const canRegister = turno?.estado && String(turno.estado).toLowerCase() !== 'cancelado';
   const [saving, setSaving] = useState(false);
+
+  // Funciones para el modal
+  const abrirModalDetalle = (notaDetalle) => {
+    setModalDetalle({ visible: true, nota: notaDetalle });
+  };
+
+  const cerrarModalDetalle = () => {
+    setModalDetalle({ visible: false, nota: null });
+  };
 
   useEffect(() => {
     const fetchTurno = async () => {
@@ -26,7 +38,40 @@ const NotaClinica = () => {
         const res = await axios.get(`${API}/clinica/turno/${turnoId}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        setTurno(res.data);
+        const turnoData = res.data;
+        setTurno(turnoData);
+        
+        // Cargar historial de notas previas del paciente
+        if (turnoData.id_paciente) {
+          setLoadingHistorial(true);
+          try {
+            const historialRes = await axios.get(`${API}/clinica/paciente/${turnoData.id_paciente}/historial`, {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+            console.log('Datos del historial recibidos:', historialRes.data);
+            setNotasPrevias(historialRes.data || []);
+          } catch (error) {
+            console.error('Error al cargar historial:', error);
+          } finally {
+            setLoadingHistorial(false);
+          }
+        }
+        
+        // Si el turno está confirmado, automáticamente cambiarlo a "en_curso"
+        if (turnoData.estado === 'confirmado') {
+          try {
+            await axios.patch(`${API}/turnos/${turnoId}/estado`, 
+              { estado: 'en_curso' },
+              { headers: { Authorization: `Bearer ${token}` } }
+            );
+            // Actualizar el estado local
+            setTurno(prev => ({ ...prev, estado: 'en_curso' }));
+            toast.info('Consulta iniciada - Estado cambiado a "En curso"');
+          } catch (error) {
+            console.error('Error al cambiar estado a en_curso:', error);
+            // No mostramos error al usuario, el turno sigue funcionando
+          }
+        }
       } catch (e) {
         toast.error(e.response?.data?.message || 'Error al cargar el turno');
       } finally {
@@ -58,7 +103,19 @@ const NotaClinica = () => {
           'Content-Type': 'multipart/form-data'
         }
       });
-      toast.success('Nota guardada');
+
+      // Automáticamente cambiar el turno a "completado" después de guardar la nota
+      try {
+        await axios.patch(`${API}/turnos/${turnoId}/estado`, 
+          { estado: 'completado' },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        toast.success('Nota guardada y turno completado');
+      } catch (error) {
+        console.error('Error al completar turno:', error);
+        toast.success('Nota guardada (error al completar turno automáticamente)');
+      }
+
       navigate(`/dashboard/profesional/paciente/${turno.id_paciente}/historial`);
     } catch (e) {
       toast.error(e.response?.data?.message || 'Error al guardar la nota');
@@ -78,30 +135,53 @@ const NotaClinica = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-12 px-4">
-      <div className="max-w-3xl mx-auto">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-[#00796B] rounded-2xl shadow-lg mb-6">
-            <ClipboardDocumentListIcon className="w-10 h-10 text-white" />
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 py-12 px-4">
+      <div className="max-w-7xl mx-auto">
+        {/* Header mejorado */}
+        <div className="text-center mb-10">
+          <div className="inline-flex items-center justify-center w-24 h-24 bg-gradient-to-br from-[#00796B] to-[#004D40] rounded-3xl shadow-xl mb-6">
+            <ClipboardDocumentListIcon className="w-12 h-12 text-white" />
           </div>
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">Nota clínica del turno</h2>
-          <p className="text-gray-600">Registra la atención y adjunta documentos</p>
+          <h1 className="text-4xl font-bold text-gray-900 mb-3">Nota clínica</h1>
+          <p className="text-lg text-gray-600 max-w-md mx-auto">Registra la atención y consulta el historial clínico del paciente</p>
         </div>
 
-  {/* Datos del turno */}
-        <div className="bg-white rounded-2xl shadow-md p-6 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-            <div>
-              <p className="text-gray-500">Fecha</p>
-              <p className="font-semibold">{turno?.fecha} {turno?.hora_inicio?.slice(0,5)}</p>
+        {/* Tarjeta del paciente mejorada */}
+        <div className="bg-gradient-to-r from-white to-gray-50 rounded-3xl shadow-lg border border-gray-100 p-8 mb-8">
+          <div className="text-center">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full mb-4">
+              <span className="text-2xl text-white font-bold">
+                {turno?.pac_nombre ? `${turno.pac_nombre.charAt(0)}${turno.pac_apellido?.charAt(0) || ''}` : '👤'}
+              </span>
             </div>
-            <div>
-              <p className="text-gray-500">Paciente</p>
-              <p className="font-semibold">{turno?.pac_nombre ? `${turno.pac_nombre} ${turno.pac_apellido}` : '—'}</p>
-            </div>
-            <div>
-              <p className="text-gray-500">Estado</p>
-              <p className="font-semibold">{turno?.estado || '—'}</p>
+            <h2 className="text-3xl font-bold text-gray-900 mb-2">
+              {turno?.pac_nombre ? `${turno.pac_nombre} ${turno.pac_apellido}` : 'Paciente no especificado'}
+            </h2>
+            <div className="inline-flex items-center gap-6 text-gray-600 bg-white rounded-full px-6 py-3 shadow-sm">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                <span className="font-medium">
+                  {turno?.fecha ? (() => {
+                    try {
+                      const fechaStr = turno.fecha.includes('T') ? turno.fecha : turno.fecha + 'T00:00:00';
+                      return new Date(fechaStr).toLocaleDateString('es-ES', {
+                        weekday: 'long',
+                        year: 'numeric', 
+                        month: 'long',
+                        day: 'numeric'
+                      });
+                    } catch (error) {
+                      console.error('Error al formatear fecha:', error, turno.fecha);
+                      return turno.fecha;
+                    }
+                  })() : 'Fecha no disponible'}
+                </span>
+              </div>
+              <div className="w-px h-4 bg-gray-300"></div>
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                <span className="font-medium">{turno?.hora_inicio?.slice(0,5) || 'Hora no disponible'}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -113,57 +193,401 @@ const NotaClinica = () => {
           </div>
         )}
 
-        {/* Formulario */}
-        <div className="bg-white rounded-2xl shadow-md p-6">
-          <form onSubmit={onSubmit} className="space-y-6">
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Nota clínica</label>
-              <textarea
-                className="w-full min-h-[160px] rounded-lg border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#00796B] focus:border-transparent disabled:bg-gray-100"
-                value={nota}
-                onChange={(e) => setNota(e.target.value)}
-                placeholder="Escribe los detalles de la consulta, hallazgos, indicaciones..."
-                required
-                disabled={!canRegister}
-              />
+        {/* Layout en dos columnas mejorado */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Columna izquierda: Formulario de nueva nota */}
+          <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
+            <div className="bg-gradient-to-r from-[#00796B] to-[#004D40] p-6">
+              <h3 className="text-xl font-bold text-white flex items-center gap-3">
+                <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+                  <ClipboardDocumentListIcon className="w-5 h-5 text-white" />
+                </div>
+                Nueva nota clínica
+              </h3>
             </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Adjuntar documentos</label>
-              <div className="flex items-center justify-center w-full">
-                <label className="w-full flex flex-col items-center px-4 py-6 bg-white text-[#00796B] rounded-lg border-2 border-dashed border-[#00796B]/40 cursor-pointer hover:bg-gray-50">
-                  <DocumentArrowUpIcon className="w-8 h-8 mb-2" />
-                  <span className="text-sm">Sube PDFs o imágenes (máx 5 archivos)</span>
-                  <input
-                    type="file"
-                    className="hidden"
-                    multiple
-                    accept="application/pdf,image/*"
-                    onChange={(e) => setFiles(Array.from(e.target.files))}
+            <div className="p-6">
+              <form onSubmit={onSubmit} className="space-y-6">
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-3">Nota clínica</label>
+                  <textarea
+                    className="w-full min-h-[200px] rounded-xl border-2 border-gray-200 px-4 py-4 focus:outline-none focus:ring-2 focus:ring-[#00796B] focus:border-transparent disabled:bg-gray-100 transition-all duration-200"
+                    value={nota}
+                    onChange={(e) => setNota(e.target.value)}
+                    placeholder="Escribe los detalles de la consulta, hallazgos, indicaciones..."
+                    required
                     disabled={!canRegister}
                   />
-                </label>
-              </div>
-              {files.length > 0 && (
-                <div className="mt-3 text-sm text-gray-600">
-                  {files.map((f) => (
-                    <div key={f.name}>{f.name}</div>
-                  ))}
                 </div>
-              )}
-            </div>
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-3">Adjuntar documentos</label>
+                  <div className="flex items-center justify-center w-full">
+                    <label className="w-full flex flex-col items-center px-6 py-8 bg-gradient-to-br from-gray-50 to-gray-100 text-[#00796B] rounded-xl border-2 border-dashed border-[#00796B]/40 cursor-pointer hover:from-[#00796B]/5 hover:to-[#00796B]/10 transition-all duration-200">
+                      <DocumentArrowUpIcon className="w-10 h-10 mb-3" />
+                      <span className="text-sm font-medium">Sube PDFs o imágenes</span>
+                      <span className="text-xs text-gray-500 mt-1">(máximo 5 archivos)</span>
+                      <input
+                        type="file"
+                        className="hidden"
+                        multiple
+                        accept="application/pdf,image/*"
+                        onChange={(e) => setFiles(Array.from(e.target.files))}
+                        disabled={!canRegister}
+                      />
+                    </label>
+                  </div>
+                  {files.length > 0 && (
+                    <div className="mt-4 space-y-2">
+                      {files.map((f) => (
+                        <div key={f.name} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
+                          📎 <span className="text-sm text-gray-700">{f.name}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
 
-            <div className="pt-2">
-              <button
-                type="submit"
-                disabled={saving || !canRegister}
-                className="w-full py-3 rounded-lg bg-[#00796B] hover:bg-[#00695c] text-white font-semibold shadow-md disabled:opacity-60"
-              >
-                {saving ? 'Guardando...' : 'Guardar nota'}
-              </button>
+                <div className="pt-4">
+                  <button
+                    type="submit"
+                    disabled={saving || !canRegister}
+                    className="w-full py-4 rounded-xl bg-gradient-to-r from-[#00796B] to-[#004D40] hover:from-[#00695c] hover:to-[#00251a] text-white font-bold shadow-lg disabled:opacity-60 transition-all duration-200 transform hover:scale-[1.02]"
+                  >
+                    {saving ? '🔄 Guardando...' : '💾 Guardar nota y completar turno'}
+                  </button>
+                </div>
+              </form>
             </div>
-          </form>
+          </div>
+
+          {/* Columna derecha: Historial de notas previas */}
+          <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
+            <div className="bg-gradient-to-r from-purple-600 to-blue-600 p-6">
+              <h3 className="text-xl font-bold text-white flex items-center gap-3">
+                <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+                  <span className="text-sm">📋</span>
+                </div>
+                Historial clínico
+              </h3>
+            </div>
+            <div className="p-6">
+            
+            {loadingHistorial ? (
+              <div className="space-y-4">
+                {[1,2,3].map(i => (
+                  <div key={i} className="animate-pulse">
+                    <div className="h-4 bg-gradient-to-r from-gray-200 to-gray-300 rounded mb-2"></div>
+                    <div className="h-16 bg-gradient-to-r from-gray-100 to-gray-200 rounded"></div>
+                  </div>
+                ))}
+              </div>
+            ) : notasPrevias.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <span className="text-3xl">📝</span>
+                </div>
+                <h4 className="text-lg font-semibold text-gray-600 mb-2">Sin historial previo</h4>
+                <p className="text-gray-500">Este será el primer registro clínico</p>
+              </div>
+            ) : (
+              <div className="max-h-[600px] overflow-y-auto space-y-4 pr-2">
+                {notasPrevias.map((notaPrevia, index) => {
+                  // Formatear fecha correctamente
+                  const formatearFechaHistorial = (fecha) => {
+                    try {
+                      if (!fecha) return 'Fecha no disponible';
+                      const fechaObj = new Date(fecha);
+                      if (isNaN(fechaObj.getTime())) return 'Fecha inválida';
+                      return fechaObj.toLocaleDateString('es-ES', {
+                        year: 'numeric',
+                        month: 'long', 
+                        day: 'numeric'
+                      });
+                    } catch (error) {
+                      console.error('Error al formatear fecha del historial:', error, fecha);
+                      return 'Fecha no disponible';
+                    }
+                  };
+
+                  // Determinar el contenido y tipo
+                  const esDocumento = notaPrevia.tipo === 'documento';
+                  const tieneContenido = notaPrevia.detalle || notaPrevia.nota;
+                  const contenidoPreview = esDocumento 
+                    ? `Documento: ${notaPrevia.tipo_documento || 'Archivo médico'}`
+                    : (tieneContenido ? (notaPrevia.detalle || notaPrevia.nota) : 'Documento sin descripción');
+                  
+                  const esClickeable = tieneContenido || esDocumento;
+
+                  return (
+                    <div 
+                      key={index} 
+                      className={`group relative overflow-hidden rounded-xl border-2 transition-all duration-200 ${
+                        esClickeable 
+                          ? 'border-gray-200 hover:border-[#00796B] hover:shadow-lg cursor-pointer transform hover:scale-[1.02]' 
+                          : 'border-gray-100'
+                      }`}
+                      onClick={() => esClickeable && abrirModalDetalle(notaPrevia)}
+                    >
+                      {/* Indicador lateral */}
+                      <div className={`absolute left-0 top-0 bottom-0 w-1 ${
+                        esDocumento ? 'bg-gradient-to-b from-blue-500 to-purple-600' : 'bg-gradient-to-b from-green-500 to-teal-600'
+                      }`}></div>
+                      
+                      <div className="p-4 pl-6">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <span className={`text-lg ${
+                              esDocumento ? '📄' : '📝'
+                            }`}></span>
+                            <span className="text-sm font-bold text-gray-900">
+                              {formatearFechaHistorial(notaPrevia.fecha)}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1 text-xs text-gray-500 bg-gray-100 rounded-full px-2 py-1">
+                            👨‍⚕️ <span>{notaPrevia.profesional || 'Dr. No especificado'}</span>
+                          </div>
+                        </div>
+                        
+                        <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-3 rounded-lg text-sm text-gray-700">
+                          {contenidoPreview.length > 120 ? `${contenidoPreview.substring(0, 120)}...` : contenidoPreview}
+                        </div>
+                        
+                        {esClickeable && (
+                          <div className="mt-3 text-xs font-medium text-[#00796B] flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <span>👁️</span> Clic para ver detalles completos
+                          </div>
+                        )}
+                        
+                        {esDocumento && (
+                          <div className="mt-2 flex items-center gap-2 text-xs text-gray-500">
+                            <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                              📁 {notaPrevia.tipo_documento || 'Documento'}
+                            </span>
+                            {notaPrevia.compartido && (
+                              <span className="bg-green-100 text-green-700 px-2 py-1 rounded">
+                                ✅ Compartido
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
         </div>
       </div>
+
+      {/* Modal de detalle */}
+      {modalDetalle.visible && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              {/* Header del modal */}
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-bold text-gray-900">
+                  {modalDetalle.nota?.tipo === 'documento' ? '📄 Documento Médico' : '📝 Nota Clínica'}
+                </h3>
+                <button
+                  onClick={cerrarModalDetalle}
+                  className="text-gray-400 hover:text-gray-600 text-2xl font-bold"
+                >
+                  ×
+                </button>
+              </div>
+
+              {/* Información del registro */}
+              <div className="bg-gray-50 rounded-lg p-4 mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="font-medium text-gray-700">Fecha:</span>
+                    <p className="text-gray-900">
+                      {modalDetalle.nota?.fecha ? new Date(modalDetalle.nota.fecha).toLocaleDateString('es-ES', {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      }) : 'No disponible'}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-700">Profesional:</span>
+                    <p className="text-gray-900">{modalDetalle.nota?.profesional || 'No especificado'}</p>
+                  </div>
+                  {modalDetalle.nota?.tipo === 'documento' && (
+                    <>
+                      <div>
+                        <span className="font-medium text-gray-700">Tipo:</span>
+                        <p className="text-gray-900">{modalDetalle.nota?.tipo_documento || 'Documento médico'}</p>
+                      </div>
+                      <div>
+                        <span className="font-medium text-gray-700">Estado:</span>
+                        <p className="text-gray-900">
+                          {modalDetalle.nota?.compartido ? '✅ Compartido con paciente' : '🔒 Privado'}
+                        </p>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Contenido */}
+              <div className="mb-6">
+                {modalDetalle.nota?.tipo === 'documento' ? (
+                  <div>
+                    <h4 className="font-medium text-gray-700 mb-2">Archivo:</h4>
+                    {modalDetalle.nota?.url ? (
+                      <div className="border border-gray-200 rounded-lg overflow-hidden">
+                        {/* Vista previa del archivo */}
+                        <div className="bg-gray-50 p-4 border-b">
+                          <div className="flex items-center gap-3">
+                            <span className="text-2xl">📎</span>
+                            <div className="flex-1">
+                              <p className="font-medium">{modalDetalle.nota.tipo_documento}</p>
+                              <p className="text-sm text-gray-600">{modalDetalle.nota.url.split('/').pop()}</p>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Vista previa según tipo de archivo */}
+                        <div className="p-4">
+                          {(() => {
+                            const url = modalDetalle.nota.url;
+                            const tipoDocumento = modalDetalle.nota.tipo_documento?.toLowerCase() || '';
+                            const extension = url?.split('.').pop()?.toLowerCase() || '';
+                            
+                            // Construir URL completa si es relativa
+                            const urlCompleta = url?.startsWith('/') ? `${BASE}${url}` : url;
+                            
+                            // Vista previa para imágenes
+                            if (['imagen', 'image'].includes(tipoDocumento) || 
+                                ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].includes(extension)) {
+                              return (
+                                <div className="text-center">
+                                  <img 
+                                    src={urlCompleta} 
+                                    alt="Vista previa" 
+                                    className="max-w-full max-h-96 mx-auto rounded-lg shadow-sm border"
+                                    onError={(e) => {
+                                      console.error('Error al cargar imagen:', urlCompleta);
+                                      e.target.style.display = 'none';
+                                      e.target.nextSibling.style.display = 'block';
+                                    }}
+                                  />
+                                  <div style={{display: 'none'}} className="text-gray-500 py-8">
+                                    <span className="text-4xl block mb-2">🖼️</span>
+                                    <p>Error al cargar la imagen</p>
+                                    <p className="text-sm">Verifica que el archivo sea accesible</p>
+                                  </div>
+                                </div>
+                              );
+                            }
+                            
+                            // Vista previa para PDFs
+                            if (tipoDocumento.includes('pdf') || extension === 'pdf') {
+                              return (
+                                <div className="bg-gray-100 rounded-lg">
+                                  <iframe
+                                    src={`${urlCompleta}#toolbar=1&navpanes=1&scrollbar=1`}
+                                    width="100%"
+                                    height="500px"
+                                    className="rounded-lg"
+                                    title="Vista previa PDF"
+                                    onError={(e) => {
+                                      e.target.style.display = 'none';
+                                      e.target.nextSibling.style.display = 'block';
+                                    }}
+                                  />
+                                  <div style={{display: 'none'}} className="text-center text-gray-500 py-8">
+                                    <span className="text-4xl block mb-2">📄</span>
+                                    <p>No se puede mostrar la vista previa del PDF</p>
+                                    <p className="text-sm">Use el botón de descarga para ver el archivo</p>
+                                  </div>
+                                </div>
+                              );
+                            }
+                            
+                            // Vista previa para documentos de texto
+                            if (['doc', 'docx', 'txt', 'rtf'].includes(extension)) {
+                              return (
+                                <div className="text-center text-gray-500 py-8">
+                                  <span className="text-4xl block mb-2">📝</span>
+                                  <p className="font-medium">Documento de texto</p>
+                                  <p className="text-sm">Formato: {extension.toUpperCase()}</p>
+                                  <p className="text-sm mt-2">Use el botón de descarga para abrir el archivo</p>
+                                </div>
+                              );
+                            }
+                            
+                            // Fallback para otros tipos
+                            return (
+                              <div className="text-center text-gray-500 py-8">
+                                <span className="text-4xl block mb-2">📎</span>
+                                <p className="font-medium">Archivo adjunto</p>
+                                <p className="text-sm">Tipo: {modalDetalle.nota.tipo_documento}</p>
+                                <p className="text-sm mt-2">Use el botón de descarga para abrir el archivo</p>
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-gray-500 italic">Archivo no disponible</p>
+                    )}
+                  </div>
+                ) : (
+                  <div>
+                    <h4 className="font-medium text-gray-700 mb-2">Nota clínica:</h4>
+                    <div className="bg-white border border-gray-200 rounded-lg p-4 min-h-[200px]">
+                      <p className="text-gray-900 whitespace-pre-wrap">
+                        {modalDetalle.nota?.detalle || modalDetalle.nota?.nota || 'Sin contenido disponible'}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Botones del modal */}
+              <div className="flex justify-between items-center gap-3">
+                <div className="text-sm text-gray-500">
+                  {modalDetalle.nota?.tipo === 'documento' && modalDetalle.nota?.url && (
+                    <span>💡 Tip: Puedes hacer zoom en la imagen o navegar en el PDF</span>
+                  )}
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    onClick={cerrarModalDetalle}
+                    className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    Cerrar
+                  </button>
+                  {modalDetalle.nota?.url && (
+                    <>
+                      <a
+                        href={modalDetalle.nota.url?.startsWith('/') ? `${BASE}${modalDetalle.nota.url}` : modalDetalle.nota.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                      >
+                        🔗 Abrir en nueva pestaña
+                      </a>
+                      <a
+                        href={modalDetalle.nota.url?.startsWith('/') ? `${BASE}${modalDetalle.nota.url}` : modalDetalle.nota.url}
+                        download
+                        className="px-4 py-2 bg-[#00796B] text-white rounded-lg hover:bg-[#00695c] transition-colors"
+                      >
+                        📥 Descargar
+                      </a>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

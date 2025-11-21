@@ -39,10 +39,43 @@ const MisTurnos = () => {
     }
   };
 
-  // Funciones específicas para cada acción
-  const confirmarTurno = (turnoId) => actualizarEstadoTurno(turnoId, 'confirmado');
+  // Función específica para iniciar consulta (único cambio de estado que hace el profesional)
   const iniciarConsulta = (turnoId) => actualizarEstadoTurno(turnoId, 'en_curso');
-  const marcarNoAsistio = (turnoId) => actualizarEstadoTurno(turnoId, 'no_asistio');
+
+  // Funciones auxiliares para formatear datos
+  const formatearFecha = (fecha) => {
+    return new Date(fecha).toLocaleDateString('es-ES', {
+      weekday: 'short',
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+  };
+
+  const formatearHora = (horaInicio, horaFin) => {
+    const inicio = horaInicio ? horaInicio.slice(0, 5) : '';
+    const fin = horaFin ? horaFin.slice(0, 5) : '';
+    return `${inicio}-${fin}`;
+  };
+
+  const formatearPaciente = (turno) => {
+    if (turno.paciente_nombre && turno.paciente_apellido) {
+      return `${turno.paciente_nombre} ${turno.paciente_apellido}`;
+    }
+    return turno.paciente_nombre || turno.id_paciente || 'Sin datos';
+  };
+
+  const formatearEstado = (estado) => {
+    const estados = {
+      'pendiente': 'Pendiente',
+      'confirmado': 'Confirmado',
+      'en_curso': 'En Curso',
+      'completado': 'Completado',
+      'cancelado': 'Cancelado',
+      'no_asistio': 'No Asistió'
+    };
+    return estados[estado?.toLowerCase()] || estado || '—';
+  };
 
   useEffect(() => {
     const fetchTurnos = async () => {
@@ -74,11 +107,11 @@ const MisTurnos = () => {
           <table className="min-w-full">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500">Fecha</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500">Hora</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500">Paciente</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500">Estado</th>
-                <th className="px-6 py-3"></th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 w-1/5">Fecha</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 w-1/6">Hora</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 w-1/4">Paciente</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 w-1/6">Estado</th>
+                <th className="px-6 py-3 text-right text-xs font-semibold text-gray-500 w-1/4">Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -88,76 +121,104 @@ const MisTurnos = () => {
                 <tr><td colSpan={5} className="px-6 py-6">No hay turnos</td></tr>
               ) : (
                 turnos.map((t) => (
-                  <tr key={t.id_turno} className="border-t">
-                    <td className="px-6 py-4 text-sm">{t.fecha}</td>
-                    <td className="px-6 py-4 text-sm">{t.hora_inicio?.slice(0,5)} - {t.hora_fin?.slice(0,5)}</td>
-                    <td className="px-6 py-4 text-sm">{t.paciente_nombre || t.id_paciente}</td>
-                    <td className="px-6 py-4 text-sm">{t.estado || '—'}</td>
+                  <tr key={t.id_turno} className="border-t hover:bg-gray-50 transition-colors">
+                    <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                      {formatearFecha(t.fecha)}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-700 whitespace-nowrap">
+                      {formatearHora(t.hora_inicio, t.hora_fin)}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-900">
+                      {formatearPaciente(t)}
+                    </td>
+                    <td className="px-6 py-4 text-sm">
+                      <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
+                        t.estado === 'pendiente' ? 'bg-yellow-100 text-yellow-800' :
+                        t.estado === 'confirmado' ? 'bg-green-100 text-green-800' :
+                        t.estado === 'en_curso' ? 'bg-blue-100 text-blue-800' :
+                        t.estado === 'completado' ? 'bg-purple-100 text-purple-800' :
+                        t.estado === 'cancelado' ? 'bg-red-100 text-red-800' :
+                        t.estado === 'no_asistio' ? 'bg-orange-100 text-orange-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {formatearEstado(t.estado)}
+                      </span>
+                    </td>
                     <td className="px-6 py-4 text-right">
                       {(() => {
                         const estado = String(t.estado || '').toLowerCase();
                         
                         // Definir qué acciones están disponibles según el estado
-                        const puedeConfirmar = estado === 'pendiente';
+                        // Solo para profesionales: iniciar consulta y registrar nota
                         const puedeIniciar = estado === 'confirmado';
-                        const puedeRegistrarNota = ['confirmado', 'en_curso'].includes(estado);
-                        const puedeMarcarNoAsistio = estado === 'confirmado';
+                        const puedeRegistrarNota = estado === 'en_curso';
+                        const puedeVerNota = estado === 'completado';
                         
-                        // Estados que no permiten acciones
-                        if (['completado', 'cancelado', 'no_asistio'].includes(estado)) {
+                        // Estados finales que no permiten acciones principales
+                        if (['cancelado', 'no_asistio'].includes(estado)) {
                           return (
-                            <span className="px-3 py-1.5 rounded-md bg-gray-100 text-gray-500 text-sm inline-block cursor-not-allowed">
-                              {estado === 'completado' ? 'Finalizado' : 
-                               estado === 'cancelado' ? 'Cancelado' : 
-                               'No asistió'}
+                            <span className="px-4 py-2 rounded-md bg-gray-100 text-gray-500 text-sm font-medium cursor-not-allowed whitespace-nowrap">
+                              {estado === 'cancelado' ? 'Cancelado' : 'No asistió'}
                             </span>
                           );
                         }
 
-                        return (
-                          <div className="flex gap-2 justify-end">
-                            {puedeConfirmar && (
-                              <button
-                                onClick={() => confirmarTurno(t.id_turno)}
-                                className="px-3 py-1.5 rounded-md bg-green-600 hover:bg-green-700 text-white text-sm"
-                              >
-                                Confirmar
-                              </button>
-                            )}
-                            
-                            {puedeIniciar && (
-                              <button
-                                onClick={() => iniciarConsulta(t.id_turno)}
-                                className="px-3 py-1.5 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-sm"
-                              >
-                                Iniciar
-                              </button>
-                            )}
-                            
-                            {puedeRegistrarNota && (
+                        // Estado pendiente - solo información
+                        if (estado === 'pendiente') {
+                          return (
+                            <span className="px-4 py-2 rounded-md bg-yellow-100 text-yellow-700 text-sm font-medium whitespace-nowrap">
+                              Esperando confirmación
+                            </span>
+                          );
+                        }
+
+                        // Estado completado - mostrar opciones post-consulta
+                        if (estado === 'completado') {
+                          return (
+                            <div className="flex gap-2 justify-end items-center">
                               <Link 
                                 to={`/dashboard/profesional/nota/${t.id_turno}`} 
-                                className="px-3 py-1.5 rounded-md bg-[#00796B] hover:bg-[#00695c] text-white text-sm"
+                                className="px-4 py-2 rounded-md bg-gray-500 hover:bg-gray-600 text-white text-sm font-medium transition-colors whitespace-nowrap"
                               >
-                                {estado === 'en_curso' ? 'Finalizar' : 'Registrar nota'}
+                                👁️ Ver Nota
+                              </Link>
+                              <Link 
+                                to={`/dashboard/profesional/turno/${t.id_turno}/seguimiento`} 
+                                className="px-4 py-2 rounded-md bg-purple-500 hover:bg-purple-600 text-white text-sm font-medium transition-colors whitespace-nowrap"
+                              >
+                                📋 Seguimiento
+                              </Link>
+                              <span className="px-4 py-2 rounded-md bg-purple-100 text-purple-700 text-sm font-medium whitespace-nowrap">
+                                ✅ Completado
+                              </span>
+                            </div>
+                          );
+                        }
+
+                        return (
+                          <div className="flex gap-2 justify-end items-center">
+                            {puedeIniciar && (
+                              <Link
+                                to={`/dashboard/profesional/nota/${t.id_turno}`}
+                                className="px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors whitespace-nowrap"
+                              >
+                                🩺 Iniciar Consulta
                               </Link>
                             )}
                             
-                            {puedeMarcarNoAsistio && (
-                              <button
-                                onClick={() => marcarNoAsistio(t.id_turno)}
-                                className="px-3 py-1.5 rounded-md bg-orange-500 hover:bg-orange-600 text-white text-sm"
-                              >
-                                No asistió
-                              </button>
+                            {puedeRegistrarNota && (
+                              <>
+                                <Link 
+                                  to={`/dashboard/profesional/nota/${t.id_turno}`} 
+                                  className="px-4 py-2 rounded-md bg-green-600 hover:bg-green-700 text-white text-sm font-medium transition-colors whitespace-nowrap"
+                                >
+                                  📝 Registrar Nota
+                                </Link>
+                                <span className="px-4 py-2 rounded-md bg-blue-100 text-blue-700 text-sm font-medium whitespace-nowrap">
+                                  🔵 En consulta
+                                </span>
+                              </>
                             )}
-                            
-                            <Link 
-                              to={`/dashboard/profesional/turno/${t.id_turno}/seguimiento`} 
-                              className="px-3 py-1.5 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-sm"
-                            >
-                              Seguimiento
-                            </Link>
                           </div>
                         );
                       })()}
