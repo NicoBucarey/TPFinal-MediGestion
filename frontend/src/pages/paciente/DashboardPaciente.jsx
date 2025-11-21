@@ -24,21 +24,16 @@ const DashboardPaciente = () => {
 
   const cargarDatos = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+      // TODO: Implementar endpoints en backend
+      // const token = localStorage.getItem('token');
+      // const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
       
-      // Cargar estadísticas y próximos turnos del paciente
-      const [statsRes, turnosRes] = await Promise.all([
-        axios.get(`${API_URL}/paciente/estadisticas`, {
-          headers: { Authorization: `Bearer ${token}` }
-        }),
-        axios.get(`${API_URL}/paciente/turnos/proximos`, {
-          headers: { Authorization: `Bearer ${token}` }
-        })
-      ]);
-      
-      setEstadisticas(statsRes.data);
-      setProximosTurnos(turnosRes.data);
+      setEstadisticas({
+        consultasRealizadas: 0,
+        documentosCompartidos: 0,
+        seguimientosActivos: 0
+      });
+      setProximosTurnos([]);
     } catch (error) {
       console.error('Error al cargar datos:', error);
     } finally {

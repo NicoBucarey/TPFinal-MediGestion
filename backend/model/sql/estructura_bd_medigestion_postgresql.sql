@@ -21,6 +21,7 @@ CREATE TABLE paciente (
     id_paciente INT PRIMARY KEY,
     fecha_nac DATE NOT NULL,
     dni VARCHAR(20) UNIQUE NOT NULL,
+    id_sucursal INT,
     FOREIGN KEY (id_paciente) REFERENCES usuario(id_usuario)
 );
 
@@ -29,6 +30,7 @@ CREATE TABLE profesional (
     id_profesional INT PRIMARY KEY,
     profesion VARCHAR(100),
     especialidad VARCHAR(100),
+    id_sucursal INT,
     FOREIGN KEY (id_profesional) REFERENCES usuario(id_usuario)
 );
 
@@ -67,6 +69,7 @@ CREATE TABLE turno (
     id_turno SERIAL PRIMARY KEY,
     id_profesional INT REFERENCES profesional(id_profesional),
     id_paciente INT REFERENCES paciente(id_paciente),
+    id_sucursal INT,
     fecha DATE,
     hora_inicio TIME,
     hora_fin TIME,
@@ -78,6 +81,7 @@ CREATE TABLE turno_periodico (
     id_turno_periodico SERIAL PRIMARY KEY,
     id_paciente INT REFERENCES paciente(id_paciente),
     id_profesional INT REFERENCES profesional(id_profesional),
+    id_sucursal INT,
     tipo_periodicidad VARCHAR(20) CHECK (tipo_periodicidad IN ('libre', 'semanal', 'quincenal', 'mensual')),
     dia_semana VARCHAR(20),
     hora_inicio TIME,
@@ -174,6 +178,7 @@ CREATE TABLE turno_periodico (
     id_turno_periodico SERIAL PRIMARY KEY,
     id_paciente INT REFERENCES paciente(id_paciente),
     id_profesional INT REFERENCES profesional(id_profesional),
+    id_sucursal INT,
     tipo_periodicidad VARCHAR(20) CHECK (tipo_periodicidad IN ('libre', 'semanal', 'quincenal', 'mensual')),
     dia_semana VARCHAR(20),
     hora_inicio TIME,
@@ -186,7 +191,31 @@ CREATE TABLE turno_periodico (
 
 -- 3. Crear la tabla que relaciona turnos periódicos con turnos individuales
 CREATE TABLE turno_periodico_instancia (
-    id_turno INT REFERENCES turno(id_turno),
-    id_turno_periodico INT REFERENCES turno_periodico(id_turno_periodico),
-    PRIMARY KEY (id_turno, id_turno_periodico)
+        id_turno INT REFERENCES turno(id_turno),
+        id_turno_periodico INT REFERENCES turno_periodico(id_turno_periodico),
+        PRIMARY KEY (id_turno, id_turno_periodico)
 );
+
+-- Nueva tabla sucursal
+CREATE TABLE sucursal (
+    id_sucursal SERIAL PRIMARY KEY,
+    numero VARCHAR(20) NOT NULL,
+    nombre VARCHAR(150),
+    direccion VARCHAR(255) NOT NULL,
+    localidad VARCHAR(100) NOT NULL,
+    provincia VARCHAR(100) NOT NULL,
+    telefono VARCHAR(30),
+    email VARCHAR(150),
+    imagen_url VARCHAR(500),
+    activa BOOLEAN NOT NULL DEFAULT TRUE
+);
+
+-- Agregar FKs una vez creada sucursal
+ALTER TABLE paciente
+    ADD CONSTRAINT fk_paciente_sucursal FOREIGN KEY (id_sucursal) REFERENCES sucursal(id_sucursal) ON DELETE SET NULL;
+ALTER TABLE profesional
+    ADD CONSTRAINT fk_profesional_sucursal FOREIGN KEY (id_sucursal) REFERENCES sucursal(id_sucursal) ON DELETE SET NULL;
+ALTER TABLE turno
+    ADD CONSTRAINT fk_turno_sucursal FOREIGN KEY (id_sucursal) REFERENCES sucursal(id_sucursal) ON DELETE SET NULL;
+ALTER TABLE turno_periodico
+    ADD CONSTRAINT fk_turno_periodico_sucursal FOREIGN KEY (id_sucursal) REFERENCES sucursal(id_sucursal) ON DELETE SET NULL;

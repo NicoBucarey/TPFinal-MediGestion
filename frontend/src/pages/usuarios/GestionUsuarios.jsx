@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuthStore } from '../../stores/authStore';
@@ -27,6 +27,8 @@ const GestionUsuarios = () => {
   });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [sucursales, setSucursales] = useState([]);
+  const [loadingSucursales, setLoadingSucursales] = useState(true);
 
   // Solo permitir acceso a administradores
   if (user?.rol !== 'admin') {
@@ -41,6 +43,22 @@ const GestionUsuarios = () => {
     });
   };
 
+  useEffect(() => {
+    const cargarSucursales = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+        const res = await axios.get(`${API_URL}/sucursales`, { headers: { Authorization: `Bearer ${token}` } });
+        setSucursales(res.data.filter(s => s.activa));
+      } catch (err) {
+        console.error('Error cargando sucursales:', err);
+      } finally {
+        setLoadingSucursales(false);
+      }
+    };
+    cargarSucursales();
+  }, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -50,7 +68,7 @@ const GestionUsuarios = () => {
       const token = localStorage.getItem('token');
       await axios.post(
         `${import.meta.env.VITE_API_URL}/users/staff`,
-        formData,
+        { ...formData },
         {
           headers: {
             'Authorization': `Bearer ${token}`
@@ -221,6 +239,29 @@ const GestionUsuarios = () => {
                   placeholder="+54 9 11 1234-5678"
                 />
               </div>
+            </div>
+
+            {/* Sucursal */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Sucursal
+              </label>
+              {loadingSucursales ? (
+                <p className="text-sm text-gray-500">Cargando sucursales...</p>
+              ) : (
+                <select
+                  name="id_sucursal"
+                  value={formData.id_sucursal || ''}
+                  onChange={handleChange}
+                  required
+                  className="block w-full pl-3 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#00796B] focus:border-transparent transition-all"
+                >
+                  <option value="">Selecciona sucursal</option>
+                  {sucursales.map(s => (
+                    <option key={s.id_sucursal} value={s.id_sucursal}>{s.numero} - {s.nombre || s.localidad}</option>
+                  ))}
+                </select>
+              )}
             </div>
 
             {/* Campos específicos para profesionales */}

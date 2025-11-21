@@ -17,10 +17,18 @@ const Header = ({ className = '' }) => {
           </Link>
           
           <div className="flex items-center space-x-6">
+            {!isAuthenticated && (
+              <Link
+                to="/ubicaciones"
+                className="text-secondary-dark hover:text-primary transition-colors duration-200 text-sm font-medium"
+              >
+                Ubicaciones
+              </Link>
+            )}
             {isAuthenticated ? (
               <div className="flex items-center space-x-4">
                 <Link
-                  to="/perfil"
+                  to="/dashboard/perfil"
                   className="text-secondary-dark hover:text-primary transition-colors duration-200 text-sm font-medium"
                 >
                   {user?.nombre} {user?.apellido}

@@ -23,16 +23,33 @@ const DashboardSecretario = () => {
   const cargarDatos = async () => {
     try {
       const token = localStorage.getItem('token');
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
       
-      // Cargar solo estadísticas
-      const statsRes = await axios.get(`${API_URL}/secretario/estadisticas`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
-      setEstadisticas(statsRes.data);
+      // Cargar estadísticas del secretario
+      try {
+        const statsRes = await axios.get(`${API_URL}/secretario/estadisticas`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setEstadisticas(statsRes.data);
+      } catch (error) {
+        console.log('Endpoints de estadísticas no disponibles, usando datos por defecto');
+        // Fallback con datos por defecto
+        setEstadisticas({
+          turnosHoy: 0,
+          turnosMes: 0,
+          pacientesAtendidos: 0,
+          turnosPendientes: 0
+        });
+      }
     } catch (error) {
       console.error('Error al cargar datos:', error);
+      // Fallback en caso de error general
+      setEstadisticas({
+        turnosHoy: 0,
+        turnosMes: 0,
+        pacientesAtendidos: 0,
+        turnosPendientes: 0
+      });
     } finally {
       setLoading(false);
     }

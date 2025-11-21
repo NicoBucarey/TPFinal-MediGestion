@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { Toaster } from 'sonner';
 import MainLayout from './layouts/MainLayout';
 import Home from './pages/Home';
+import Ubicaciones from './pages/Ubicaciones';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import Dashboard from './pages/Dashboard';
@@ -12,6 +13,7 @@ import DashboardSecretario from './pages/secretario/DashboardSecretario';
 import RecepcionPage from './pages/recepcion/RecepcionPage';
 import DashboardPaciente from './pages/paciente/DashboardPaciente';
 import Reportes from './pages/admin/Reportes';
+import GestionSucursales from './pages/admin/GestionSucursales';
 import GestionUsuarios from './pages/usuarios/GestionUsuarios';
 import NuevoTurno from './pages/turnos/NuevoTurno';
 import NuevoTurnoPeriodico from './pages/turnos/NuevoTurnoPeriodico';
@@ -31,6 +33,7 @@ import SolicitarTeleconsulta from './pages/paciente/SolicitarTeleconsulta';
 import MisTurnosPaciente from './pages/paciente/MisTurnosPaciente';
 import MisDocumentos from './pages/paciente/MisDocumentos';
 import MisSeguimientos from './pages/paciente/MisSeguimientos';
+import Perfil from './pages/Perfil';
 import ProtectedRoute from './components/ProtectedRoute';
 import useAuth from './hooks/useAuth';
 
@@ -48,42 +51,47 @@ function App() {
       const path = location.pathname;
       const map = [
         // Públicas
-        { re: /^\/$/, title: 'inicio' },
-        { re: /^\/login$/, title: 'iniciar sesión' },
-        { re: /^\/register$/, title: 'crear cuenta' },
-        { re: /^\/dashboard\/?$/, title: 'dashboard' },
+        { re: /^\/$/, title: 'Inicio' },
+        { re: /^\/ubicaciones$/, title: 'Ubicaciones' },
+        { re: /^\/login$/, title: 'Iniciar sesión' },
+        { re: /^\/register$/, title: 'Crear cuenta' },
+        { re: /^\/dashboard\/?$/, title: 'Dashboard' },
 
         // Admin
-        { re: /^\/dashboard\/admin$/, title: 'dashboard' },
-        { re: /^\/dashboard\/admin\/users$/, title: 'usuarios' },
-        { re: /^\/dashboard\/admin\/reports$/, title: 'reportes' },
+        { re: /^\/dashboard\/admin$/, title: 'Dashboard' },
+        { re: /^\/dashboard\/admin\/users$/, title: 'Usuarios' },
+        { re: /^\/dashboard\/admin\/reports$/, title: 'Reportes' },
+        { re: /^\/dashboard\/admin\/sucursales$/, title: 'Sucursales' },
 
         // Secretaría / Turnos
-        { re: /^\/dashboard\/secretario$/, title: 'dashboard' },
-        { re: /^\/dashboard\/turnos\/nuevo$/, title: 'nuevo turno' },
-        { re: /^\/dashboard\/turnos\/periodico\/nuevo$/, title: 'turno periódico' },
+        { re: /^\/dashboard\/secretario$/, title: 'Dashboard' },
+        { re: /^\/dashboard\/turnos\/nuevo$/, title: 'Nuevo turno' },
+        { re: /^\/dashboard\/turnos\/periodico\/nuevo$/, title: 'Turno periódico' },
 
         // Profesional
-        { re: /^\/dashboard\/profesional$/, title: 'dashboard' },
-        { re: /^\/dashboard\/disponibilidad$/, title: 'disponibilidad' },
-        { re: /^\/dashboard\/profesional\/turnos$/, title: 'mis turnos' },
-        { re: /^\/dashboard\/profesional\/nota\/.+$/, title: 'nota clínica' },
-        { re: /^\/dashboard\/profesional\/paciente\/.+\/historial$/, title: 'historial del paciente' },
-        { re: /^\/dashboard\/profesional\/documentos$/, title: 'documentos' },
-        { re: /^\/dashboard\/profesional\/historias$/, title: 'historias clínicas' },
-        { re: /^\/dashboard\/profesional\/seguimientos$/, title: 'seguimientos' },
-        { re: /^\/dashboard\/profesional\/seguimiento\/.+$/, title: 'seguimiento' },
-        { re: /^\/dashboard\/profesional\/turno\/.+\/seguimiento$/, title: 'programar seguimiento' },
+        { re: /^\/dashboard\/profesional$/, title: 'Dashboard' },
+        { re: /^\/dashboard\/disponibilidad$/, title: 'Disponibilidad' },
+        { re: /^\/dashboard\/profesional\/turnos$/, title: 'Mis turnos' },
+        { re: /^\/dashboard\/profesional\/nota\/.+$/, title: 'Nota clínica' },
+        { re: /^\/dashboard\/profesional\/paciente\/.+\/historial$/, title: 'Historial del paciente' },
+        { re: /^\/dashboard\/profesional\/documentos$/, title: 'Documentos' },
+        { re: /^\/dashboard\/profesional\/historias$/, title: 'Historias clínicas' },
+        { re: /^\/dashboard\/profesional\/seguimientos$/, title: 'Seguimientos' },
+        { re: /^\/dashboard\/profesional\/seguimiento\/.+$/, title: 'Seguimiento' },
+        { re: /^\/dashboard\/profesional\/turno\/.+\/seguimiento$/, title: 'Programar seguimiento' },
 
         // Paciente
-        { re: /^\/dashboard\/paciente$/, title: 'dashboard' },
-        { re: /^\/dashboard\/paciente\/turnos$/, title: 'mis turnos' },
-        { re: /^\/dashboard\/paciente\/buscar-profesional$/, title: 'buscar profesional' },
-        { re: /^\/dashboard\/paciente\/agenda\/.+$/, title: 'agenda' },
-        { re: /^\/dashboard\/paciente\/turno-periodico\/.+$/, title: 'turno periódico' },
-        { re: /^\/dashboard\/paciente\/documentos$/, title: 'documentos' },
-        { re: /^\/dashboard\/paciente\/seguimientos$/, title: 'mis seguimientos' },
-        { re: /^\/dashboard\/paciente\/historia$/, title: 'mi historia clínica' },
+        { re: /^\/dashboard\/paciente$/, title: 'Dashboard' },
+        { re: /^\/dashboard\/paciente\/turnos$/, title: 'Mis turnos' },
+        { re: /^\/dashboard\/paciente\/buscar-profesional$/, title: 'Buscar profesional' },
+        { re: /^\/dashboard\/paciente\/agenda\/.+$/, title: 'Agenda' },
+        { re: /^\/dashboard\/paciente\/turno-periodico\/.+$/, title: 'Turno periódico' },
+        { re: /^\/dashboard\/paciente\/documentos$/, title: 'Documentos' },
+        { re: /^\/dashboard\/paciente\/seguimientos$/, title: 'Mis seguimientos' },
+        { re: /^\/dashboard\/paciente\/historia$/, title: 'Mi historia clínica' },
+
+        // Perfil
+        { re: /^\/dashboard\/perfil$/, title: 'Mi perfil' },
       ];
 
       const match = map.find(m => m.re.test(path));
@@ -102,6 +110,7 @@ function App() {
         {/* Rutas públicas */}
         <Route path="/" element={<MainLayout />}>
           <Route index element={<Home />} />
+          <Route path="/ubicaciones" element={<Ubicaciones />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
         </Route>
@@ -133,6 +142,11 @@ function App() {
               <Reportes />
             </ProtectedRoute>
           } />
+          <Route path="admin/sucursales" element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <GestionSucursales />
+            </ProtectedRoute>
+          } />
 
           {/* Rutas de Secretario */}
           <Route path="secretario" element={
@@ -158,6 +172,13 @@ function App() {
           <Route path="paciente" element={
             <ProtectedRoute allowedRoles={['paciente']}>
               <DashboardPaciente />
+            </ProtectedRoute>
+          } />
+
+          {/* Ruta de Perfil */}
+          <Route path="perfil" element={
+            <ProtectedRoute allowedRoles={['profesional', 'secretario', 'paciente']}>
+              <Perfil />
             </ProtectedRoute>
           } />
 

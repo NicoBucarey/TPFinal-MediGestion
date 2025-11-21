@@ -1,7 +1,33 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
 import { UserGroupIcon, HeartIcon, ComputerDesktopIcon, ShieldCheckIcon } from "@heroicons/react/24/outline";
 
 const Home = () => {
+  const [ubicaciones, setUbicaciones] = useState([]);
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+  const baseUrl = (API_URL || '').replace(/\/api$/, '');
+
+  useEffect(() => {
+    const cargarUbicaciones = async () => {
+      try {
+        const res = await axios.get(`${API_URL}/sucursales/activas`);
+        const data = Array.isArray(res.data) ? res.data : [];
+        // Debug mínimo en desarrollo
+        if (import.meta.env.DEV) {
+          // eslint-disable-next-line no-console
+          console.log('Ubicaciones activas recibidas:', data.length);
+        }
+        setUbicaciones(data);
+      } catch (e) {
+        if (import.meta.env.DEV) {
+          // eslint-disable-next-line no-console
+          console.warn('No se pudieron cargar sucursales activas', e?.response?.status);
+        }
+        setUbicaciones([]);
+      }
+    };
+    cargarUbicaciones();
+  }, []);
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero */}
@@ -118,6 +144,40 @@ const Home = () => {
                 Seguridad y confidencialidad en la gestión de datos y atención médica.
               </p>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Ubicaciones */}
+      <section className="bg-gray-50 py-16">
+        <div className="container mx-auto px-4">
+          <h2 className="text-3xl font-bold text-gray-900 mb-6 text-center">Ubicaciones</h2>
+          <p className="text-center text-gray-600 mb-4">Conocé algunas de nuestras sucursales.</p>
+          <div className="text-center mb-10">
+            <a
+              href="/ubicaciones"
+              className="inline-block text-primary hover:text-teal-700 font-medium text-sm hover:underline"
+            >
+              Ver todas las ubicaciones →
+            </a>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {ubicaciones.slice(0, 6).map((s) => (
+              <div key={s.id_sucursal} className="bg-white rounded-2xl shadow overflow-hidden">
+                {s.imagen_url ? (
+                  <img src={baseUrl + s.imagen_url} alt={s.nombre || `Sucursal ${s.numero}`} className="w-full h-48 object-cover" />
+                ) : (
+                  <div className="w-full h-48 bg-gray-200 flex items-center justify-center text-gray-500 text-sm">Sin imagen</div>
+                )}
+                <div className="p-4">
+                  <h3 className="font-semibold text-gray-900">#{s.numero} {s.nombre || 'Sucursal'}</h3>
+                  <p className="text-sm text-gray-600">{s.direccion}, {s.localidad}, {s.provincia}</p>
+                </div>
+              </div>
+            ))}
+            {ubicaciones.length === 0 && (
+              <div className="col-span-full text-center text-gray-500">No hay sucursales activas para mostrar.</div>
+            )}
           </div>
         </div>
       </section>
