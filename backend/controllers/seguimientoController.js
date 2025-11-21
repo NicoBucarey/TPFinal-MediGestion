@@ -11,8 +11,7 @@ const SeguimientoController = {
       intervaloDias,
       repeticiones,
       fechaFin,
-      instrucciones,
-      tipoSeguimiento
+      preguntasPersonalizadas
     } = req.body;
     const userId = req.user?.id;
     const userRole = req.user?.rol?.toLowerCase();
@@ -40,26 +39,47 @@ const SeguimientoController = {
         return res.status(400).json({ message: 'El paciente no coincide con el turno' });
       }
 
+      // Crear seguimiento
       const result = await pool.query(
         `INSERT INTO seguimiento (
-            id_turno, id_paciente, id_profesional, fecha_inicio, instrucciones, 
-            frecuencia_tipo, intervalo_dias, repeticiones, fecha_fin, tipo_seguimiento, estado
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+            id_turno, id_paciente, id_profesional, fecha_inicio, 
+            frecuencia_tipo, intervalo_dias, repeticiones, fecha_fin, estado
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
         RETURNING *`,
         [
           turnoId,
           pacienteId,
-            userId,
-            fechaInicio,
-          instrucciones,
-            frecuenciaTipo || 'unica',
-            intervaloDias || null,
-            repeticiones || null,
-            fechaFin || null,
-            tipoSeguimiento || 'texto',
-            'pendiente'
+          userId,
+          fechaInicio,
+          frecuenciaTipo || 'unica',
+          intervaloDias || null,
+          repeticiones || null,
+          fechaFin || null,
+          'pendiente'
         ]
       );
+
+      const seguimientoId = result.rows[0].id_seguimiento;
+
+      // Crear preguntas personalizadas si existen
+      if (preguntasPersonalizadas && Array.isArray(preguntasPersonalizadas) && preguntasPersonalizadas.length > 0) {
+        for (let i = 0; i < preguntasPersonalizadas.length; i++) {
+          const pregunta = preguntasPersonalizadas[i];
+          await pool.query(
+            `INSERT INTO pregunta_seguimiento (
+              id_seguimiento, texto_pregunta, tipo_respuesta, opciones, obligatoria, orden_pregunta
+            ) VALUES ($1, $2, $3, $4, $5, $6)`,
+            [
+              seguimientoId,
+              pregunta.texto,
+              pregunta.tipoRespuesta,
+              pregunta.opciones || null,
+              pregunta.obligatoria !== false, // Por defecto true
+              i + 1 // Orden basado en el índice
+            ]
+          );
+        }
+      }
 
       res.status(201).json({
         message: 'Seguimiento creado correctamente',

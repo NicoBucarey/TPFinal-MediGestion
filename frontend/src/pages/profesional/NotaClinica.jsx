@@ -116,7 +116,7 @@ const NotaClinica = () => {
         toast.success('Nota guardada (error al completar turno automáticamente)');
       }
 
-      navigate(`/dashboard/profesional/paciente/${turno.id_paciente}/historial`);
+      navigate('/dashboard/profesional/mis-turnos');
     } catch (e) {
       toast.error(e.response?.data?.message || 'Error al guardar la nota');
     } finally {

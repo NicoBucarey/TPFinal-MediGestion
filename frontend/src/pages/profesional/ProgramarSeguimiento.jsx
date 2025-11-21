@@ -23,8 +23,15 @@ const ProgramarSeguimiento = () => {
     intervaloDias: 0,
     repeticiones: 1,
     fechaFin: '',
-    instrucciones: '',
-    tipoSeguimiento: 'texto'
+    preguntasPersonalizadas: []
+  });
+
+  // Estado para manejar nueva pregunta
+  const [nuevaPregunta, setNuevaPregunta] = useState({
+    texto: '',
+    tipoRespuesta: 'texto',
+    opciones: [],
+    obligatoria: true
   });
 
   useEffect(() => {
@@ -48,10 +55,50 @@ const ProgramarSeguimiento = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleNuevaPreguntaChange = (e) => {
+    const { name, value } = e.target;
+    setNuevaPregunta((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const agregarPregunta = () => {
+    if (!nuevaPregunta.texto.trim()) {
+      toast.error('El texto de la pregunta es obligatorio');
+      return;
+    }
+    
+    const pregunta = {
+      id: Date.now(),
+      ...nuevaPregunta
+    };
+    
+    setFormData(prev => ({
+      ...prev,
+      preguntasPersonalizadas: [...prev.preguntasPersonalizadas, pregunta]
+    }));
+    
+    // Resetear formulario de nueva pregunta
+    setNuevaPregunta({
+      texto: '',
+      tipoRespuesta: 'texto',
+      opciones: [],
+      obligatoria: true
+    });
+    
+    toast.success('Pregunta agregada correctamente');
+  };
+
+  const eliminarPregunta = (id) => {
+    setFormData(prev => ({
+      ...prev,
+      preguntasPersonalizadas: prev.preguntasPersonalizadas.filter(p => p.id !== id)
+    }));
+    toast.success('Pregunta eliminada');
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.fechaInicio || !formData.instrucciones.trim()) {
-      toast.error('Fecha de inicio e instrucciones son obligatorias');
+    if (!formData.fechaInicio) {
+      toast.error('Fecha de inicio es obligatoria');
       return;
     }
     setSaving(true);
@@ -61,7 +108,8 @@ const ProgramarSeguimiento = () => {
         {
           turnoId,
           pacienteId: turno.id_paciente,
-          ...formData
+          ...formData,
+          preguntasPersonalizadas: formData.preguntasPersonalizadas
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -85,38 +133,64 @@ const ProgramarSeguimiento = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-12 px-4">
-      <div className="max-w-3xl mx-auto">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-[#00796B] rounded-2xl shadow-lg mb-6">
-            <ClipboardDocumentCheckIcon className="w-10 h-10 text-white" />
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 py-12 px-4">
+      <div className="max-w-5xl mx-auto">
+        {/* Header mejorado */}
+        <div className="text-center mb-10">
+          <div className="inline-flex items-center justify-center w-24 h-24 bg-gradient-to-br from-[#00796B] to-[#004D40] rounded-3xl shadow-xl mb-6">
+            <ClipboardDocumentCheckIcon className="w-12 h-12 text-white" />
           </div>
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">Programar Seguimiento</h2>
-          <p className="text-gray-600">Configura el seguimiento post-consulta</p>
+          <h1 className="text-4xl font-bold text-gray-900 mb-3">Programar Seguimiento</h1>
+          <p className="text-lg text-gray-600 max-w-md mx-auto">Configura el seguimiento post-consulta personalizado</p>
         </div>
 
-        {/* Datos del turno */}
-        <div className="bg-white rounded-2xl shadow-md p-6 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-            <div>
-              <p className="text-gray-500">Fecha turno</p>
-              <p className="font-semibold">{turno?.fecha}</p>
+        {/* Tarjeta del paciente y turno mejorada */}
+        <div className="bg-gradient-to-r from-white to-gray-50 rounded-3xl shadow-lg border border-gray-100 p-8 mb-8">
+          <div className="text-center">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-green-500 to-teal-600 rounded-full mb-4">
+              <span className="text-2xl text-white font-bold">
+                {turno?.pac_nombre ? `${turno.pac_nombre.charAt(0)}${turno.pac_apellido?.charAt(0) || ''}` : '👤'}
+              </span>
             </div>
-            <div>
-              <p className="text-gray-500">Paciente</p>
-              <p className="font-semibold">{turno?.pac_nombre ? `${turno.pac_nombre} ${turno.pac_apellido}` : '—'}</p>
-            </div>
-            <div>
-              <p className="text-gray-500">Estado</p>
-              <p className="font-semibold">{turno?.estado || '—'}</p>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              {turno?.pac_nombre ? `${turno.pac_nombre} ${turno.pac_apellido}` : 'Paciente no especificado'}
+            </h2>
+            <div className="inline-flex items-center gap-6 text-gray-600 bg-white rounded-full px-6 py-3 shadow-sm">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                <span className="font-medium">
+                  {turno?.fecha ? new Date(turno.fecha).toLocaleDateString('es-ES', {
+                    weekday: 'long',
+                    year: 'numeric', 
+                    month: 'long',
+                    day: 'numeric'
+                  }) : 'Fecha no disponible'}
+                </span>
+              </div>
+              <div className="w-px h-4 bg-gray-300"></div>
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                <span className="font-medium text-green-700 bg-green-50 px-2 py-1 rounded">
+                  {turno?.estado || 'Estado no disponible'}
+                </span>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Formulario */}
-        <div className="bg-white rounded-2xl shadow-md p-8">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Formulario modernizado */}
+        <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
+          <div className="bg-gradient-to-r from-[#00796B] to-[#004D40] p-6">
+            <h3 className="text-xl font-bold text-white flex items-center gap-3">
+              <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+                <span className="text-sm">📅</span>
+              </div>
+              Configuración de Seguimiento
+            </h3>
+          </div>
+          <div className="p-8">
+            <form onSubmit={handleSubmit} className="space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">Fecha inicio *</label>
                 <input
@@ -126,6 +200,18 @@ const ProgramarSeguimiento = () => {
                   onChange={handleChange}
                   className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#00796B]"
                   required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Fecha fin</label>
+                <input
+                  type="date"
+                  name="fechaFin"
+                  value={formData.fechaFin}
+                  onChange={handleChange}
+                  min={formData.fechaInicio}
+                  className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#00796B]"
                 />
               </div>
 
@@ -146,83 +232,164 @@ const ProgramarSeguimiento = () => {
             </div>
 
             {formData.frecuenciaTipo === 'personalizada' && (
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Intervalo (días)</label>
-                <input
-                  type="number"
-                  name="intervaloDias"
-                  value={formData.intervaloDias}
-                  onChange={handleChange}
-                  min="1"
-                  className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#00796B]"
-                />
+              <div className="bg-gradient-to-r from-orange-50 to-yellow-50 rounded-xl p-6">
+                <h5 className="text-md font-bold text-gray-900 mb-4 flex items-center gap-2">
+                  ⚙️ Configuración Personalizada
+                </h5>
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-3">Intervalo (días)</label>
+                  <input
+                    type="number"
+                    name="intervaloDias"
+                    value={formData.intervaloDias}
+                    onChange={handleChange}
+                    min="1"
+                    placeholder="Ej: 3 (cada 3 días)"
+                    className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#00796B] focus:border-transparent transition-all duration-200"
+                  />
+                </div>
               </div>
             )}
 
             {formData.frecuenciaTipo !== 'unica' && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-6">
+                <h5 className="text-md font-bold text-gray-900 mb-4 flex items-center gap-2">
+                  🔁 Control de Repetición
+                </h5>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Repeticiones</label>
+                  <label className="block text-sm font-bold text-gray-700 mb-3">Repeticiones</label>
                   <input
                     type="number"
                     name="repeticiones"
                     value={formData.repeticiones}
                     onChange={handleChange}
                     min="1"
-                    className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#00796B]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Fecha fin</label>
-                  <input
-                    type="date"
-                    name="fechaFin"
-                    value={formData.fechaFin}
-                    onChange={handleChange}
-                    className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#00796B]"
+                    placeholder="Número de veces"
+                    className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#00796B] focus:border-transparent transition-all duration-200"
                   />
                 </div>
               </div>
             )}
 
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Tipo de seguimiento</label>
-              <select
-                name="tipoSeguimiento"
-                value={formData.tipoSeguimiento}
-                onChange={handleChange}
-                className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#00796B]"
-              >
-                <option value="texto">Texto libre</option>
-                <option value="checklist">Checklist</option>
-                <option value="sintomas">Control de síntomas</option>
-                <option value="archivos">Adjuntar archivos</option>
-              </select>
+            {/* Sección de Preguntas Personalizadas */}
+            <div className="bg-gradient-to-r from-indigo-50 to-blue-50 rounded-xl p-6">
+              <h4 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                ❓ Preguntas Personalizadas
+              </h4>
+              
+              {/* Formulario para nueva pregunta */}
+              <div className="bg-white rounded-lg p-4 mb-4 border-2 border-gray-100">
+                <h5 className="text-md font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                  ➕ Agregar Nueva Pregunta
+                </h5>
+                
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Texto de la pregunta *</label>
+                    <input
+                      type="text"
+                      name="texto"
+                      value={nuevaPregunta.texto}
+                      onChange={handleNuevaPreguntaChange}
+                      className="w-full rounded-lg border-2 border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#00796B] focus:border-transparent transition-all duration-200"
+                      placeholder="Ej: ¿Cómo se siente del 1 al 10?"
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-bold text-gray-700 mb-2">Tipo de respuesta</label>
+                      <select
+                        name="tipoRespuesta"
+                        value={nuevaPregunta.tipoRespuesta}
+                        onChange={handleNuevaPreguntaChange}
+                        className="w-full rounded-lg border-2 border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#00796B] focus:border-transparent transition-all duration-200"
+                      >
+                        <option value="texto">📝 Texto libre</option>
+                        <option value="escala">📊 Escala 1-10</option>
+                        <option value="sino">✅ Sí/No</option>
+                        <option value="opcion">📋 Opción múltiple</option>
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-bold text-gray-700 mb-2">¿Obligatoria?</label>
+                      <select
+                        name="obligatoria"
+                        value={nuevaPregunta.obligatoria}
+                        onChange={(e) => setNuevaPregunta(prev => ({...prev, obligatoria: e.target.value === 'true'}))}
+                        className="w-full rounded-lg border-2 border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#00796B] focus:border-transparent transition-all duration-200"
+                      >
+                        <option value={true}>Sí</option>
+                        <option value={false}>No</option>
+                      </select>
+                    </div>
+                  </div>
+                  
+                  <button
+                    type="button"
+                    onClick={agregarPregunta}
+                    className="w-full py-3 rounded-lg bg-gradient-to-r from-indigo-500 to-blue-600 hover:from-indigo-600 hover:to-blue-700 text-white font-semibold transition-all duration-200 transform hover:scale-[1.02]"
+                  >
+                    ➕ Agregar Pregunta
+                  </button>
+                </div>
+              </div>
+              
+              {/* Lista de preguntas agregadas */}
+              {formData.preguntasPersonalizadas.length > 0 && (
+                <div className="space-y-3">
+                  <h5 className="text-md font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                    📝 Preguntas Configuradas ({formData.preguntasPersonalizadas.length})
+                  </h5>
+                  {formData.preguntasPersonalizadas.map((pregunta, index) => (
+                    <div key={pregunta.id} className="bg-white rounded-lg p-4 border-l-4 border-indigo-500 shadow-sm">
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <span className="bg-indigo-100 text-indigo-800 text-xs font-bold px-2 py-1 rounded-full">
+                              #{index + 1}
+                            </span>
+                            {pregunta.obligatoria && (
+                              <span className="bg-red-100 text-red-800 text-xs font-bold px-2 py-1 rounded-full">
+                                Obligatoria
+                              </span>
+                            )}
+                            <span className="bg-gray-100 text-gray-700 text-xs font-medium px-2 py-1 rounded-full">
+                              {pregunta.tipoRespuesta === 'texto' && '📝 Texto'}
+                              {pregunta.tipoRespuesta === 'escala' && '📊 Escala 1-10'}
+                              {pregunta.tipoRespuesta === 'sino' && '✅ Sí/No'}
+                              {pregunta.tipoRespuesta === 'opcion' && '📋 Opción múltiple'}
+                            </span>
+                          </div>
+                          <p className="text-gray-800 font-medium">{pregunta.texto}</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => eliminarPregunta(pregunta.id)}
+                          className="ml-4 text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded-lg transition-colors"
+                          title="Eliminar pregunta"
+                        >
+                          🗑️
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Instrucciones para el paciente *</label>
-              <textarea
-                name="instrucciones"
-                value={formData.instrucciones}
-                onChange={handleChange}
-                rows={5}
-                className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#00796B]"
-                placeholder="Descripción detallada de las indicaciones, qué debe registrar el paciente, etc."
-                required
-              />
-            </div>
-
-            <div className="pt-2">
+            <div className="pt-4">
               <button
                 type="submit"
                 disabled={saving}
-                className="w-full py-3 rounded-lg bg-[#00796B] hover:bg-[#00695c] text-white font-semibold shadow-md disabled:opacity-60"
+                className="w-full py-4 rounded-xl bg-gradient-to-r from-[#00796B] to-[#004D40] hover:from-[#00695c] hover:to-[#00251a] text-white font-bold shadow-lg disabled:opacity-60 transition-all duration-200 transform hover:scale-[1.02]"
               >
-                {saving ? 'Guardando...' : 'Programar seguimiento'}
+                {saving ? '🔄 Guardando...' : '🚀 Programar seguimiento'}
               </button>
             </div>
-          </form>
+            </form>
+          </div>
         </div>
       </div>
     </div>
