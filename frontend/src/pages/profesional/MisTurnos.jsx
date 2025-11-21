@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useAuthStore } from '../../stores/authStore';
 import { Link } from 'react-router-dom';
+import { toast } from 'sonner';
 
 const API = import.meta.env.VITE_API_URL;
 
@@ -10,6 +11,38 @@ const MisTurnos = () => {
   const token = useAuthStore((s) => s.token) || localStorage.getItem('token');
   const [turnos, setTurnos] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Función para actualizar estado de turno
+  const actualizarEstadoTurno = async (turnoId, nuevoEstado) => {
+    try {
+      await axios.put(`${API}/turnos/${turnoId}/estado`, 
+        { estado: nuevoEstado },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      // Actualizar el estado local
+      setTurnos(prev => prev.map(t => 
+        t.id_turno === turnoId ? { ...t, estado: nuevoEstado } : t
+      ));
+      
+      const mensajes = {
+        'confirmado': 'Turno confirmado exitosamente',
+        'en_curso': 'Consulta iniciada',
+        'no_asistio': 'Marcado como "No asistió"',
+        'cancelado': 'Turno cancelado'
+      };
+      
+      toast.success(mensajes[nuevoEstado] || 'Estado actualizado');
+    } catch (error) {
+      console.error('Error actualizando estado:', error);
+      toast.error('Error al actualizar el estado del turno');
+    }
+  };
+
+  // Funciones específicas para cada acción
+  const confirmarTurno = (turnoId) => actualizarEstadoTurno(turnoId, 'confirmado');
+  const iniciarConsulta = (turnoId) => actualizarEstadoTurno(turnoId, 'en_curso');
+  const marcarNoAsistio = (turnoId) => actualizarEstadoTurno(turnoId, 'no_asistio');
 
   useEffect(() => {
     const fetchTurnos = async () => {
@@ -61,14 +94,73 @@ const MisTurnos = () => {
                     <td className="px-6 py-4 text-sm">{t.paciente_nombre || t.id_paciente}</td>
                     <td className="px-6 py-4 text-sm">{t.estado || '—'}</td>
                     <td className="px-6 py-4 text-right">
-                      {String(t.estado || '').toLowerCase() === 'confirmado' ? (
-                        <div className="flex gap-2 justify-end">
-                          <Link to={`/dashboard/profesional/nota/${t.id_turno}`} className="px-3 py-1.5 rounded-md bg-[#00796B] hover:bg-[#00695c] text-white text-sm">Registrar nota</Link>
-                          <Link to={`/dashboard/profesional/turno/${t.id_turno}/seguimiento`} className="px-3 py-1.5 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-sm">Seguimiento</Link>
-                        </div>
-                      ) : (
-                        <span className="px-3 py-1.5 rounded-md bg-gray-100 text-gray-500 text-sm inline-block cursor-not-allowed">No disponible</span>
-                      )}
+                      {(() => {
+                        const estado = String(t.estado || '').toLowerCase();
+                        
+                        // Definir qué acciones están disponibles según el estado
+                        const puedeConfirmar = estado === 'pendiente';
+                        const puedeIniciar = estado === 'confirmado';
+                        const puedeRegistrarNota = ['confirmado', 'en_curso'].includes(estado);
+                        const puedeMarcarNoAsistio = estado === 'confirmado';
+                        
+                        // Estados que no permiten acciones
+                        if (['completado', 'cancelado', 'no_asistio'].includes(estado)) {
+                          return (
+                            <span className="px-3 py-1.5 rounded-md bg-gray-100 text-gray-500 text-sm inline-block cursor-not-allowed">
+                              {estado === 'completado' ? 'Finalizado' : 
+                               estado === 'cancelado' ? 'Cancelado' : 
+                               'No asistió'}
+                            </span>
+                          );
+                        }
+
+                        return (
+                          <div className="flex gap-2 justify-end">
+                            {puedeConfirmar && (
+                              <button
+                                onClick={() => confirmarTurno(t.id_turno)}
+                                className="px-3 py-1.5 rounded-md bg-green-600 hover:bg-green-700 text-white text-sm"
+                              >
+                                Confirmar
+                              </button>
+                            )}
+                            
+                            {puedeIniciar && (
+                              <button
+                                onClick={() => iniciarConsulta(t.id_turno)}
+                                className="px-3 py-1.5 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-sm"
+                              >
+                                Iniciar
+                              </button>
+                            )}
+                            
+                            {puedeRegistrarNota && (
+                              <Link 
+                                to={`/dashboard/profesional/nota/${t.id_turno}`} 
+                                className="px-3 py-1.5 rounded-md bg-[#00796B] hover:bg-[#00695c] text-white text-sm"
+                              >
+                                {estado === 'en_curso' ? 'Finalizar' : 'Registrar nota'}
+                              </Link>
+                            )}
+                            
+                            {puedeMarcarNoAsistio && (
+                              <button
+                                onClick={() => marcarNoAsistio(t.id_turno)}
+                                className="px-3 py-1.5 rounded-md bg-orange-500 hover:bg-orange-600 text-white text-sm"
+                              >
+                                No asistió
+                              </button>
+                            )}
+                            
+                            <Link 
+                              to={`/dashboard/profesional/turno/${t.id_turno}/seguimiento`} 
+                              className="px-3 py-1.5 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-sm"
+                            >
+                              Seguimiento
+                            </Link>
+                          </div>
+                        );
+                      })()}
                     </td>
                   </tr>
                 ))

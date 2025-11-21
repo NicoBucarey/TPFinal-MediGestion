@@ -4,6 +4,7 @@ import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import './CalendarioTurnos.css';
 import { toast } from 'sonner';
+import ModalInfoTurno from './ModalInfoTurno';
 
 // Función auxiliar para convertir día de la semana a número
 const getDayNumber = (dia) => {
@@ -23,6 +24,7 @@ const CalendarioTurnos = ({ onTurnoSelect, profesionalId, tipoConsulta = 'presen
   const [eventos, setEventos] = useState([]);
   const [horariosProfesional, setHorariosProfesional] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [modalTurno, setModalTurno] = useState({ isOpen: false, turnoData: null });
   const [horarioLaboral, setHorarioLaboral] = useState({
     inicio: '08:00:00',
     fin: '20:00:00'
@@ -110,16 +112,39 @@ const CalendarioTurnos = ({ onTurnoSelect, profesionalId, tipoConsulta = 'presen
         const data = await response.json();
         console.log('Turnos obtenidos:', data);
         
-        // Convertir los turnos a eventos del calendario
-        const eventosCalendario = data.map(turno => ({
-          id: turno.id_turno,
-          title: 'Ocupado',
-          start: `${turno.fecha.split('T')[0]}T${turno.hora_inicio}`,
-          end: `${turno.fecha.split('T')[0]}T${turno.hora_fin}`,
-          backgroundColor: '#ff0000',
-          borderColor: '#cc0000',
-          display: 'background'
-        }));
+        // Función para obtener icono y color según el tipo
+        const getTurnoVisual = (turno) => {
+          // Usar las iniciales del paciente si están disponibles, sino mostrar "Ocupado"
+          const iniciales = turno.paciente_nombre && turno.paciente_apellido 
+            ? `${turno.paciente_nombre[0]}${turno.paciente_apellido[0]}`.toUpperCase()
+            : 'OC';
+          
+          return {
+            title: `👤 ${iniciales}`,
+            backgroundColor: '#3b82f6', // Azul por defecto
+            borderColor: '#2563eb',
+            textColor: '#ffffff'
+          };
+        };
+        
+        // Convertir los turnos a eventos del calendario con información visual mejorada
+        const eventosCalendario = data.map(turno => {
+          const visual = getTurnoVisual(turno);
+          return {
+            id: turno.id_turno,
+            title: visual.title,
+            start: `${turno.fecha.split('T')[0]}T${turno.hora_inicio}`,
+            end: `${turno.fecha.split('T')[0]}T${turno.hora_fin}`,
+            backgroundColor: visual.backgroundColor,
+            borderColor: visual.borderColor,
+            textColor: visual.textColor,
+            extendedProps: {
+              // Guardamos toda la información del turno para el modal
+              turnoData: turno
+            },
+            display: 'block'
+          };
+        });
         
         setEventos(prevEventos => {
           // Filtrar eventos anteriores que no sean turnos ocupados
@@ -138,6 +163,37 @@ const CalendarioTurnos = ({ onTurnoSelect, profesionalId, tipoConsulta = 'presen
       obtenerTurnos();
     }
   }, [profesionalId]);
+
+  const handleEventClick = async (info) => {
+    // Evitar que se propague el evento de dateClick
+    info.jsEvent.stopPropagation();
+    
+    const turnoId = info.event.id;
+    
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:3000/api/turnos/${turnoId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setModalTurno({ isOpen: true, turnoData: data.turno });
+      } else {
+        console.error('Error al obtener detalles del turno:', response.statusText);
+        // Si no hay endpoint específico, usar los datos básicos
+        const turnoData = info.event.extendedProps.turnoData;
+        setModalTurno({ isOpen: true, turnoData });
+      }
+    } catch (error) {
+      console.error('Error al obtener detalles del turno:', error);
+      // Fallback: usar datos básicos del evento
+      const turnoData = info.event.extendedProps.turnoData;
+      setModalTurno({ isOpen: true, turnoData });
+    }
+  };
 
   const handleDateClick = (info) => {
     const clickedDate = info.date;
@@ -201,6 +257,12 @@ const CalendarioTurnos = ({ onTurnoSelect, profesionalId, tipoConsulta = 'presen
 
   return (
     <div className="p-4 bg-white rounded-lg shadow">
+      <ModalInfoTurno 
+        isOpen={modalTurno.isOpen}
+        onClose={() => setModalTurno({ isOpen: false, turnoData: null })}
+        turnoData={modalTurno.turnoData}
+      />
+      
       <FullCalendar
         plugins={[timeGridPlugin, interactionPlugin]}
         initialView="timeGridWeek"
@@ -214,6 +276,7 @@ const CalendarioTurnos = ({ onTurnoSelect, profesionalId, tipoConsulta = 'presen
         locale="es"
         events={eventos}
         dateClick={handleDateClick}
+        eventClick={handleEventClick}
         headerToolbar={{
           left: 'prev,next today',
           center: 'title',

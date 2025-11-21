@@ -17,7 +17,7 @@ const NotaClinica = () => {
   const [nota, setNota] = useState('');
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(true);
-  const canRegister = turno?.estado && String(turno.estado).toLowerCase() === 'confirmado';
+  const canRegister = turno?.estado && String(turno.estado).toLowerCase() !== 'cancelado';
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -39,7 +39,7 @@ const NotaClinica = () => {
   const onSubmit = async (e) => {
     e.preventDefault();
     if (!canRegister) {
-      toast.error('Solo se puede registrar nota para turnos confirmados');
+      toast.error('No se puede registrar nota en turnos cancelados');
       return;
     }
     if (!nota.trim()) {
@@ -109,7 +109,7 @@ const NotaClinica = () => {
         {/* Restricción por estado */}
         {!canRegister && (
           <div className="mb-4 bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded-lg">
-            <p className="text-sm text-yellow-800">Este turno está en estado "{turno?.estado}". Solo se puede registrar nota para turnos confirmados.</p>
+            <p className="text-sm text-yellow-800">Este turno está en estado "{turno?.estado}". No se puede registrar nota en turnos cancelados.</p>
           </div>
         )}
 

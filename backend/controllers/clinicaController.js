@@ -35,9 +35,10 @@ const ClinicaController = {
         return res.status(403).json({ message: 'No tiene permisos para registrar nota en este turno' });
       }
 
-      // Validar estado del turno: solo 'confirmado' permite registrar nota
-      if (!turno.estado || String(turno.estado).toLowerCase() !== 'confirmado') {
-        return res.status(400).json({ message: 'Solo se puede registrar nota para turnos confirmados' });
+      // Validar estado del turno: no permitir nota en turnos cancelados
+      const estadoTurno = String(turno.estado || '').toLowerCase();
+      if (estadoTurno === 'cancelado') {
+        return res.status(400).json({ message: 'No se puede registrar nota en turnos cancelados' });
       }
 
       // Crear nota clínica
@@ -47,6 +48,12 @@ const ClinicaController = {
       );
 
       const idNota = notaRes.rows[0].id_nota_clinica;
+
+      // Actualizar estado del turno a 'completado' cuando se registra la nota clínica
+      await pool.query(
+        'UPDATE turno SET estado = $1 WHERE id_turno = $2',
+        ['completado', turnoId]
+      );
 
       // Procesar archivos si existen
       const files = req.files || [];

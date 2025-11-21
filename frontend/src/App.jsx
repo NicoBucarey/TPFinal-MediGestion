@@ -9,6 +9,7 @@ import Dashboard from './pages/Dashboard';
 import DashboardAdmin from './pages/admin/DashboardAdmin';
 import DashboardProfesional from './pages/profesional/DashboardProfesional';
 import DashboardSecretario from './pages/secretario/DashboardSecretario';
+import RecepcionPage from './pages/recepcion/RecepcionPage';
 import DashboardPaciente from './pages/paciente/DashboardPaciente';
 import Reportes from './pages/admin/Reportes';
 import GestionUsuarios from './pages/usuarios/GestionUsuarios';
@@ -137,6 +138,12 @@ function App() {
           <Route path="secretario" element={
             <ProtectedRoute allowedRoles={['secretario']}>
               <DashboardSecretario />
+            </ProtectedRoute>
+          } />
+
+          <Route path="recepcion" element={
+            <ProtectedRoute allowedRoles={['secretario']}>
+              <RecepcionPage />
             </ProtectedRoute>
           } />
 

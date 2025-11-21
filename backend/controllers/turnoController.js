@@ -3,6 +3,32 @@ const TurnoModel = require('../model/turnoModel');
 const pool = require('../db');
 
 const TurnoController = {
+  // Obtener detalles de un turno específico
+  obtenerTurno: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const turno = await TurnoModel.obtenerPorId(id);
+      
+      console.log('=== DATOS DEL TURNO DESDE BD ===');
+      console.log('turno completo:', turno);
+      console.log('turno.tipo:', turno?.tipo);
+      console.log('===============================');
+      
+      if (!turno) {
+        return res.status(404).json({ 
+          error: 'Turno no encontrado' 
+        });
+      }
+      
+      res.json({ turno });
+    } catch (error) {
+      console.error('Error al obtener turno:', error);
+      res.status(500).json({ 
+        error: 'Error interno del servidor' 
+      });
+    }
+  },
+
   obtenerHorariosProfesional: async (req, res) => {
     try {
       const { id } = req.params;
@@ -105,9 +131,9 @@ const TurnoController = {
 
   crearTurno: async (req, res) => {
     try {
-      const { profesionalId, pacienteId, fechaHora, motivoConsulta } = req.body;
+      const { profesionalId, pacienteId, fechaHora, motivoConsulta, tipo = 'presencial' } = req.body;
 
-      console.log('Datos recibidos para crear turno:', { profesionalId, pacienteId, fechaHora, motivoConsulta });
+      console.log('Datos recibidos para crear turno:', { profesionalId, pacienteId, fechaHora, motivoConsulta, tipo });
 
       if (!profesionalId || !pacienteId || !fechaHora) {
         return res.status(400).json({ error: 'Faltan datos requeridos: profesionalId, pacienteId, fechaHora' });
@@ -126,7 +152,8 @@ const TurnoController = {
         pacienteId,
         fecha,
         horaInicio,
-        horaFin
+        horaFin,
+        tipo
       });
 
       console.log('Turno creado:', turno);
@@ -175,6 +202,101 @@ const TurnoController = {
     } catch (error) {
       console.error('Error en TurnoController.cancelarTurno:', error);
       res.status(500).json({ error: 'Error al cancelar el turno' });
+    }
+  },
+
+  // Nuevo método para actualizar estado de turno
+  actualizarEstadoTurno: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { estado } = req.body;
+      
+      // Validar que el estado sea válido
+      const estadosValidos = ['pendiente', 'confirmado', 'en_curso', 'completado', 'cancelado', 'no_asistio'];
+      if (!estadosValidos.includes(estado)) {
+        return res.status(400).json({ error: 'Estado no válido' });
+      }
+      
+      // Actualizar estado
+      const result = await pool.query(
+        'UPDATE turno SET estado = $1 WHERE id_turno = $2 RETURNING *',
+        [estado, id]
+      );
+      
+      if (result.rows.length === 0) {
+        return res.status(404).json({ error: 'Turno no encontrado' });
+      }
+      
+      res.json({ 
+        message: 'Estado actualizado exitosamente',
+        turno: result.rows[0]
+      });
+    } catch (error) {
+      console.error('Error en TurnoController.actualizarEstadoTurno:', error);
+      res.status(500).json({ error: 'Error al actualizar el estado del turno' });
+    }
+  },
+
+  // Obtener turnos del día actual para recepción
+  obtenerTurnosRecepcionHoy: async (req, res) => {
+    try {
+      // Obtener la fecha actual en zona horaria local (Argentina)
+      const ahora = new Date();
+      // Ajustar a zona horaria de Argentina (UTC-3)
+      const fechaLocal = new Date(ahora.getTime() - (ahora.getTimezoneOffset() * 60000));
+      const hoy = fechaLocal.toISOString().split('T')[0];
+      
+      console.log('🔍 [DEBUG] Fecha actual UTC:', ahora.toISOString());
+      console.log('🔍 [DEBUG] Fecha local calculada:', hoy);
+      console.log('🔍 [DEBUG] Timezone offset:', ahora.getTimezoneOffset());
+      
+      // Consulta simplificada sin especialidad
+      const query = `
+        SELECT 
+          t.id_turno,
+          t.fecha,
+          t.hora_inicio,
+          t.hora_fin,
+          t.estado,
+          t.tipo,
+          t.id_paciente,
+          t.id_profesional,
+          up.nombre as paciente_nombre,
+          up.apellido as paciente_apellido,
+          up.telefono as paciente_telefono,
+          up.mail as paciente_email,
+          upr.nombre as profesional_nombre,
+          upr.apellido as profesional_apellido
+        FROM turno t
+        LEFT JOIN usuario up ON t.id_paciente = up.id_usuario
+        LEFT JOIN usuario upr ON t.id_profesional = upr.id_usuario
+        WHERE t.fecha = $1
+        AND t.estado != 'cancelado'
+        ORDER BY t.hora_inicio ASC
+      `;
+
+      console.log('🔍 [DEBUG] Ejecutando query con parámetros:', [hoy]);
+      const result = await pool.query(query, [hoy]);
+      console.log('✅ [DEBUG] Turnos encontrados para hoy:', result.rows.length);
+      
+      if (result.rows.length > 0) {
+        console.log('🔍 [DEBUG] Primer turno:', JSON.stringify(result.rows[0], null, 2));
+      }
+      
+      res.json(result.rows);
+    } catch (error) {
+      console.error('❌ [ERROR] Error completo en obtenerTurnosRecepcionHoy:', error);
+      console.error('❌ [ERROR] Mensaje:', error.message);
+      console.error('❌ [ERROR] Código SQL:', error.code);
+      console.error('❌ [ERROR] Stack:', error.stack);
+      
+      res.status(500).json({ 
+        error: 'Error al obtener turnos del día',
+        details: process.env.NODE_ENV === 'development' ? {
+          message: error.message,
+          code: error.code
+        } : undefined
+      });
     }
   }
 };

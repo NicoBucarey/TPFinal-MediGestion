@@ -1,6 +1,47 @@
 const db = require('../db');
 
 const TurnoModel = {
+  // Obtener detalles de un turno específico
+  obtenerPorId: async (id) => {
+    try {
+      const query = `
+        SELECT 
+          t.id_turno,
+          t.fecha,
+          t.hora_inicio,
+          t.hora_fin,
+          t.estado,
+          t.tipo,
+          t.link_reunion,
+          t.plataforma,
+          t.id_paciente,
+          t.id_profesional,
+          p.id_paciente,
+          up.nombre as paciente_nombre,
+          up.apellido as paciente_apellido,
+          up.email as paciente_email,
+          up.telefono as paciente_telefono,
+          prof.id_profesional,
+          upr.nombre as profesional_nombre,
+          upr.apellido as profesional_apellido,
+          esp.nombre_especialidad
+        FROM turno t
+        LEFT JOIN paciente p ON t.id_paciente = p.id_paciente
+        LEFT JOIN usuario up ON p.id_paciente = up.id_usuario
+        LEFT JOIN profesional prof ON t.id_profesional = prof.id_profesional
+        LEFT JOIN usuario upr ON prof.id_profesional = upr.id_usuario
+        LEFT JOIN especialidad esp ON prof.id_especialidad = esp.id_especialidad
+        WHERE t.id_turno = $1
+      `;
+
+      const result = await db.query(query, [id]);
+      return result.rows[0] || null;
+    } catch (error) {
+      console.error('Error en TurnoModel.obtenerPorId:', error);
+      throw error;
+    }
+  },
+
   obtenerTurnosProfesional: async (profesionalId, fechaDesde, fechaHasta) => {
     try {
       // Consulta para verificar si la tabla turno existe
@@ -24,8 +65,8 @@ const TurnoModel = {
           t.hora_fin,
           t.estado,
           p.id_paciente,
-          u.nombre as nombre_paciente,
-          u.apellido as apellido_paciente
+          u.nombre as paciente_nombre,
+          u.apellido as paciente_apellido
         FROM turno t
         LEFT JOIN paciente p ON t.id_paciente = p.id_paciente
         LEFT JOIN usuario u ON p.id_paciente = u.id_usuario
