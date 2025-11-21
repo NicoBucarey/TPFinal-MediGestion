@@ -198,15 +198,16 @@ CREATE TABLE turno_periodico_instancia (
 
 -- Nueva tabla sucursal
 CREATE TABLE sucursal (
-        id_sucursal SERIAL PRIMARY KEY,
-        numero VARCHAR(20) NOT NULL,
-        nombre VARCHAR(150),
-        direccion VARCHAR(255) NOT NULL,
-        localidad VARCHAR(100) NOT NULL,
-        provincia VARCHAR(100) NOT NULL,
-        telefono VARCHAR(30),
-        email VARCHAR(150),
-        activa BOOLEAN NOT NULL DEFAULT TRUE
+    id_sucursal SERIAL PRIMARY KEY,
+    numero VARCHAR(20) NOT NULL,
+    nombre VARCHAR(150),
+    direccion VARCHAR(255) NOT NULL,
+    localidad VARCHAR(100) NOT NULL,
+    provincia VARCHAR(100) NOT NULL,
+    telefono VARCHAR(30),
+    email VARCHAR(150),
+    imagen_url VARCHAR(500),
+    activa BOOLEAN NOT NULL DEFAULT TRUE
 );
 
 -- Agregar FKs una vez creada sucursal

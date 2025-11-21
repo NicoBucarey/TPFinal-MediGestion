@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { Toaster } from 'sonner';
 import MainLayout from './layouts/MainLayout';
 import Home from './pages/Home';
+import Ubicaciones from './pages/Ubicaciones';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import Dashboard from './pages/Dashboard';
@@ -50,6 +51,7 @@ function App() {
       const map = [
         // Públicas
         { re: /^\/$/, title: 'Inicio' },
+        { re: /^\/ubicaciones$/, title: 'Ubicaciones' },
         { re: /^\/login$/, title: 'Iniciar sesión' },
         { re: /^\/register$/, title: 'Crear cuenta' },
         { re: /^\/dashboard\/?$/, title: 'Dashboard' },
@@ -107,6 +109,7 @@ function App() {
         {/* Rutas públicas */}
         <Route path="/" element={<MainLayout />}>
           <Route index element={<Home />} />
+          <Route path="/ubicaciones" element={<Ubicaciones />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
         </Route>
