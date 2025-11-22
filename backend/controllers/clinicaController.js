@@ -114,6 +114,43 @@ const ClinicaController = {
     }
   },
 
+  // GET /api/clinica/pacientes/:id - Obtener información del paciente
+  obtenerPacienteInfo: async (req, res) => {
+    const { id } = req.params;
+    const userId = req.user?.id;
+    const userRole = req.user?.rol?.toLowerCase();
+
+    if (userRole !== 'profesional') {
+      return res.status(403).json({ message: 'Solo profesionales pueden acceder a esta información' });
+    }
+
+    try {
+      const result = await pool.query(
+        `SELECT 
+           u.nombre, 
+           u.apellido, 
+           u.mail,
+           u.telefono,
+           p.dni,
+           p.fecha_nacimiento,
+           p.obra_social
+         FROM usuario u
+         JOIN paciente p ON p.id_paciente = u.id_usuario
+         WHERE u.id_usuario = $1`,
+        [id]
+      );
+
+      if (result.rows.length === 0) {
+        return res.status(404).json({ message: 'Paciente no encontrado' });
+      }
+
+      res.json(result.rows[0]);
+    } catch (error) {
+      console.error('Error obtenerPacienteInfo:', error);
+      res.status(500).json({ message: 'Error al obtener información del paciente' });
+    }
+  },
+
   // GET /api/clinica/paciente/:id/historial
   obtenerHistorialPaciente: async (req, res) => {
     const { id } = req.params; // pacienteId

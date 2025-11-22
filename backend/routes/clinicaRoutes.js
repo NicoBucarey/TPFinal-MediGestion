@@ -10,6 +10,9 @@ router.post('/nota', checkRole(['profesional']), upload.array('archivos'), Clini
 // Detalle de turno (profesional y paciente involucrados)
 router.get('/turno/:id', checkRole(['profesional', 'paciente', 'secretario', 'admin']), ClinicaController.obtenerTurnoDetalle);
 
+// Información del paciente (profesional)
+router.get('/pacientes/:id', checkRole(['profesional']), ClinicaController.obtenerPacienteInfo);
+
 // Historial clínico del paciente
 router.get('/paciente/:id/historial', checkRole(['profesional', 'paciente']), ClinicaController.obtenerHistorialPaciente);
 
