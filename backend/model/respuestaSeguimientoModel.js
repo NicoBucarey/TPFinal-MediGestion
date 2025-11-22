@@ -47,7 +47,29 @@ const RespuestaSeguimientoModel = {
     `;
 
     const result = await pool.query(query, [idSeguimiento]);
-    return result.rows;
+    const respuestas = result.rows;
+
+    // Para cada respuesta, obtener las respuestas a preguntas personalizadas si existen
+    for (let respuesta of respuestas) {
+      const preguntasQuery = `
+        SELECT 
+          rp.*,
+          p.texto_pregunta,
+          p.tipo_respuesta,
+          p.opciones,
+          p.obligatoria,
+          p.orden_pregunta
+        FROM respuesta_pregunta_seguimiento rp
+        JOIN pregunta_seguimiento p ON p.id_pregunta = rp.id_pregunta
+        WHERE rp.id_respuesta_seguimiento = $1
+        ORDER BY p.orden_pregunta
+      `;
+
+      const preguntasResult = await pool.query(preguntasQuery, [respuesta.id_respuesta]);
+      respuesta.respuestas_preguntas_personalizadas = preguntasResult.rows;
+    }
+
+    return respuestas;
   },
 
   // Obtener todas las respuestas de un paciente

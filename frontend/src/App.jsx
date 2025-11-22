@@ -25,6 +25,7 @@ import DocumentosCompartidos from './pages/profesional/DocumentosCompartidos';
 import HistoriasClinicas from './pages/profesional/HistoriasClinicas';
 import MisTurnos from './pages/profesional/MisTurnos';
 import ProgramarSeguimiento from './pages/profesional/ProgramarSeguimiento';
+import SeleccionarPacienteSeguimiento from './pages/profesional/SeleccionarPacienteSeguimiento';
 import Seguimientos from './pages/profesional/Seguimientos';
 import BuscarProfesional from './pages/paciente/BuscarProfesional';
 import AgendaProfesional from './pages/paciente/AgendaProfesional';
@@ -258,6 +259,16 @@ function App() {
             </ProtectedRoute>
           } />
           <Route path="profesional/turno/:turnoId/seguimiento" element={
+            <ProtectedRoute allowedRoles={['profesional']}>
+              <ProgramarSeguimiento />
+            </ProtectedRoute>
+          } />
+          <Route path="profesional/seguimiento/seleccionar-paciente" element={
+            <ProtectedRoute allowedRoles={['profesional']}>
+              <SeleccionarPacienteSeguimiento />
+            </ProtectedRoute>
+          } />
+          <Route path="profesional/seguimiento/nuevo" element={
             <ProtectedRoute allowedRoles={['profesional']}>
               <ProgramarSeguimiento />
             </ProtectedRoute>

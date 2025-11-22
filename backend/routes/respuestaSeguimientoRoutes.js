@@ -10,6 +10,13 @@ router.post(
   RespuestaSeguimientoController.responderSeguimiento
 );
 
+// Paciente responde con preguntas personalizadas
+router.post(
+  '/seguimientos/:id/responder-personalizada',
+  checkRole(['paciente']),
+  RespuestaSeguimientoController.responderSeguimientoPersonalizada
+);
+
 // Obtener respuestas de un seguimiento (profesional o paciente dueño)
 router.get(
   '/seguimientos/:id/respuestas',

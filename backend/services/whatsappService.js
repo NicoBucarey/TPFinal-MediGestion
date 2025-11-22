@@ -197,6 +197,45 @@ ${linkReunion}
 
 ¡Nos vemos virtualmente!`;
   }
+
+  /**
+   * Genera el mensaje de notificación de seguimiento
+   */
+  generarMensajeSeguimiento(seguimiento, paciente, profesional) {
+    const fechaInicio = new Date(seguimiento.fecha_inicio).toLocaleDateString('es-AR', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+
+    const frecuenciaTexto = {
+      'unica': 'única',
+      'diaria': 'diaria',
+      'semanal': 'semanal',
+      'mensual': 'mensual'
+    };
+
+    return `📋 *Seguimiento Post-Consulta - MediGestion*
+
+Hola ${paciente.nombre}!
+
+El Dr. ${profesional.nombre} ${profesional.apellido} ha programado un seguimiento para ti:
+
+📅 Fecha de inicio: ${fechaInicio}
+🔄 Frecuencia: ${frecuenciaTexto[seguimiento.frecuencia_tipo] || seguimiento.frecuencia_tipo}
+${seguimiento.fecha_fin ? `📅 Hasta: ${new Date(seguimiento.fecha_fin).toLocaleDateString('es-AR')}` : ''}
+
+🔗 *Completa tu seguimiento aquí:*
+${process.env.FRONTEND_URL || 'http://localhost:5173'}/dashboard/paciente/seguimientos
+
+📝 *Instrucciones:*
+• Revisa las preguntas periódicamente
+• Responde con honestidad
+• Contacta a tu profesional si tenés dudas
+
+¡Tu salud es importante!`;
+  }
 }
 
 module.exports = new WhatsAppService();

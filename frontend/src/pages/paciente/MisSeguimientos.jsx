@@ -8,7 +8,8 @@ import {
   ClockIcon,
   CheckCircleIcon,
   ExclamationCircleIcon,
-  ChatBubbleBottomCenterTextIcon
+  ChatBubbleBottomCenterTextIcon,
+  QuestionMarkCircleIcon
 } from '@heroicons/react/24/outline';
 import { toast } from 'sonner';
 
@@ -20,11 +21,16 @@ const MisSeguimientos = () => {
   const [loading, setLoading] = useState(true);
   const [selectedSeguimiento, setSelectedSeguimiento] = useState(null);
   const [showModalResponder, setShowModalResponder] = useState(false);
+  const [preguntasPersonalizadas, setPreguntasPersonalizadas] = useState([]);
+  const [respuestasPreguntas, setRespuestasPreguntas] = useState({});
+  const [loadingPreguntas, setLoadingPreguntas] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  
+  // Estados para formato viejo (fallback)
   const [respuesta, setRespuesta] = useState('');
   const [observaciones, setObservaciones] = useState('');
   const [cumplimiento, setCumplimiento] = useState(true);
   const [sintomasReportados, setSintomasReportados] = useState('');
-  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     fetchSeguimientos();
@@ -46,45 +52,253 @@ const MisSeguimientos = () => {
     }
   };
 
-  const handleResponder = (seguimiento) => {
+  const fetchPreguntasPersonalizadas = async (seguimientoId) => {
+    setLoadingPreguntas(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API}/seguimiento/${seguimientoId}/preguntas`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      const preguntas = response.data || [];
+      setPreguntasPersonalizadas(preguntas);
+      
+      // Inicializar respuestas vacías
+      const respuestasIniciales = {};
+      preguntas.forEach(pregunta => {
+        respuestasIniciales[pregunta.id_pregunta] = {
+          texto: '',
+          numerica: null,
+          booleana: null,
+          opcion: ''
+        };
+      });
+      setRespuestasPreguntas(respuestasIniciales);
+    } catch (error) {
+      console.error('Error al cargar preguntas:', error);
+      setPreguntasPersonalizadas([]);
+      setRespuestasPreguntas({});
+    } finally {
+      setLoadingPreguntas(false);
+    }
+  };
+
+  const handleResponder = async (seguimiento) => {
     setSelectedSeguimiento(seguimiento);
     setRespuesta('');
     setObservaciones('');
     setCumplimiento(true);
     setSintomasReportados('');
     setShowModalResponder(true);
+
+    // Intentar cargar preguntas personalizadas
+    await fetchPreguntasPersonalizadas(seguimiento.id_seguimiento);
   };
 
   const handleSubmitRespuesta = async (e) => {
     e.preventDefault();
     
-    if (!respuesta.trim()) {
-      toast.error('Debe ingresar una respuesta');
-      return;
+    // Si hay preguntas personalizadas, usar ese formato
+    if (preguntasPersonalizadas.length > 0) {
+      // Validar que todas las preguntas obligatorias estén respondidas
+      const preguntasObligatorias = preguntasPersonalizadas.filter(p => p.obligatoria);
+      const faltanRespuestas = preguntasObligatorias.some(pregunta => {
+        const respuesta = respuestasPreguntas[pregunta.id_pregunta];
+        if (!respuesta) return true;
+        
+        switch (pregunta.tipo_respuesta) {
+          case 'texto':
+            return !respuesta.texto?.trim();
+          case 'escala':
+            return respuesta.numerica === null || respuesta.numerica === '';
+          case 'sino':
+            return respuesta.booleana === null;
+          case 'opcion':
+            return !respuesta.opcion?.trim();
+          default:
+            return true;
+        }
+      });
+
+      if (faltanRespuestas) {
+        toast.error('Por favor completa todas las preguntas obligatorias');
+        return;
+      }
+
+      setSubmitting(true);
+      try {
+        const token = localStorage.getItem('token');
+        
+        // Preparar respuestas en el formato correcto
+        const respuestasFormateadas = preguntasPersonalizadas.map(pregunta => {
+          const respuesta = respuestasPreguntas[pregunta.id_pregunta];
+          return {
+            id_pregunta: pregunta.id_pregunta,
+            respuesta_texto: pregunta.tipo_respuesta === 'texto' ? respuesta.texto : null,
+            respuesta_numerica: pregunta.tipo_respuesta === 'escala' ? parseInt(respuesta.numerica) : null,
+            respuesta_booleana: pregunta.tipo_respuesta === 'sino' ? respuesta.booleana : null,
+            respuesta_opcion: pregunta.tipo_respuesta === 'opcion' ? respuesta.opcion : null
+          };
+        });
+
+        await axios.post(
+          `${API}/seguimientos/${selectedSeguimiento.id_seguimiento}/responder-personalizada`,
+          {
+            respuestas: respuestasFormateadas,
+            observaciones_generales: observaciones.trim() || null
+          },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+        toast.success('Respuestas registradas exitosamente');
+        setShowModalResponder(false);
+        fetchSeguimientos();
+      } catch (error) {
+        console.error('Error al enviar respuestas:', error);
+        toast.error(error.response?.data?.message || 'Error al enviar las respuestas');
+      } finally {
+        setSubmitting(false);
+      }
+    } else {
+      // Usar formato viejo para seguimientos sin preguntas personalizadas
+      if (!respuesta.trim()) {
+        toast.error('Debe ingresar una respuesta');
+        return;
+      }
+
+      setSubmitting(true);
+      try {
+        const token = localStorage.getItem('token');
+        await axios.post(
+          `${API}/seguimientos/${selectedSeguimiento.id_seguimiento}/responder`,
+          {
+            respuesta: respuesta.trim(),
+            observaciones: observaciones.trim() || null,
+            sintomas_reportados: sintomasReportados.trim() || null,
+            cumplimiento
+          },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+        toast.success('Respuesta registrada exitosamente');
+        setShowModalResponder(false);
+        fetchSeguimientos();
+      } catch (error) {
+        console.error('Error al enviar respuesta:', error);
+        toast.error(error.response?.data?.message || 'Error al enviar la respuesta');
+      } finally {
+        setSubmitting(false);
+      }
     }
+  };
 
-    setSubmitting(true);
-    try {
-      const token = localStorage.getItem('token');
-      await axios.post(
-        `${API}/seguimientos/${selectedSeguimiento.id_seguimiento}/responder`,
-        {
-          respuesta: respuesta.trim(),
-          observaciones: observaciones.trim() || null,
-          sintomas_reportados: sintomasReportados.trim() || null,
-          cumplimiento
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+  const handleRespuestaPregunta = (idPregunta, tipo, valor) => {
+    setRespuestasPreguntas(prev => ({
+      ...prev,
+      [idPregunta]: {
+        ...prev[idPregunta],
+        [tipo]: valor
+      }
+    }));
+  };
 
-      toast.success('Respuesta registrada exitosamente');
-      setShowModalResponder(false);
-      fetchSeguimientos();
-    } catch (error) {
-      console.error('Error al enviar respuesta:', error);
-      toast.error(error.response?.data?.message || 'Error al enviar la respuesta');
-    } finally {
-      setSubmitting(false);
+  const renderPreguntaPersonalizada = (pregunta) => {
+    const respuesta = respuestasPreguntas[pregunta.id_pregunta] || {};
+
+    switch (pregunta.tipo_respuesta) {
+      case 'texto':
+        return (
+          <textarea
+            value={respuesta.texto || ''}
+            onChange={(e) => handleRespuestaPregunta(pregunta.id_pregunta, 'texto', e.target.value)}
+            rows={4}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none"
+            placeholder="Escribe tu respuesta aquí..."
+            required={pregunta.obligatoria}
+          />
+        );
+
+      case 'escala':
+        return (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between text-sm text-gray-600">
+              <span>1 (Muy malo)</span>
+              <span>10 (Excelente)</span>
+            </div>
+            <div className="flex gap-2">
+              {[...Array(10)].map((_, i) => {
+                const valor = i + 1;
+                const seleccionado = respuesta.numerica === valor;
+                return (
+                  <button
+                    key={valor}
+                    type="button"
+                    onClick={() => handleRespuestaPregunta(pregunta.id_pregunta, 'numerica', valor)}
+                    className={`w-10 h-10 rounded-full border-2 font-medium text-sm transition-colors ${
+                      seleccionado 
+                        ? 'bg-teal-600 text-white border-teal-600' 
+                        : 'bg-white text-gray-700 border-gray-300 hover:border-teal-300'
+                    }`}
+                  >
+                    {valor}
+                  </button>
+                );
+              })}
+            </div>
+            {respuesta.numerica && (
+              <p className="text-sm text-gray-600 text-center">
+                Seleccionaste: <span className="font-medium">{respuesta.numerica}</span>
+              </p>
+            )}
+          </div>
+        );
+
+      case 'sino':
+        return (
+          <div className="flex gap-4">
+            <label className="flex items-center cursor-pointer">
+              <input
+                type="radio"
+                name={`pregunta_${pregunta.id_pregunta}`}
+                checked={respuesta.booleana === true}
+                onChange={() => handleRespuestaPregunta(pregunta.id_pregunta, 'booleana', true)}
+                className="w-4 h-4 text-teal-600 focus:ring-teal-500"
+              />
+              <span className="ml-2 text-sm font-medium text-gray-700">Sí</span>
+            </label>
+            <label className="flex items-center cursor-pointer">
+              <input
+                type="radio"
+                name={`pregunta_${pregunta.id_pregunta}`}
+                checked={respuesta.booleana === false}
+                onChange={() => handleRespuestaPregunta(pregunta.id_pregunta, 'booleana', false)}
+                className="w-4 h-4 text-teal-600 focus:ring-teal-500"
+              />
+              <span className="ml-2 text-sm font-medium text-gray-700">No</span>
+            </label>
+          </div>
+        );
+
+      case 'opcion':
+        return (
+          <div className="space-y-2">
+            {pregunta.opciones?.map((opcion, index) => (
+              <label key={index} className="flex items-center cursor-pointer">
+                <input
+                  type="radio"
+                  name={`pregunta_${pregunta.id_pregunta}`}
+                  checked={respuesta.opcion === opcion}
+                  onChange={() => handleRespuestaPregunta(pregunta.id_pregunta, 'opcion', opcion)}
+                  className="w-4 h-4 text-teal-600 focus:ring-teal-500"
+                />
+                <span className="ml-3 text-sm text-gray-700">{opcion}</span>
+              </label>
+            ))}
+          </div>
+        );
+
+      default:
+        return <p className="text-red-500 text-sm">Tipo de pregunta no soportado</p>;
     }
   };
 
@@ -234,7 +448,7 @@ const MisSeguimientos = () => {
       {/* Modal Responder */}
       {showModalResponder && selectedSeguimiento && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-200">
               <h2 className="text-xl font-bold text-gray-900">
                 Responder Seguimiento
@@ -244,8 +458,8 @@ const MisSeguimientos = () => {
               </p>
             </div>
 
-            <form onSubmit={handleSubmitRespuesta} className="p-6 space-y-4">
-              {/* Instrucciones */}
+            <form onSubmit={handleSubmitRespuesta} className="p-6 space-y-6">
+              {/* Instrucciones generales */}
               {selectedSeguimiento.instrucciones && (
                 <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
                   <p className="text-sm font-semibold text-blue-900 mb-2">
@@ -257,83 +471,129 @@ const MisSeguimientos = () => {
                 </div>
               )}
 
-              {/* Respuesta */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Respuesta <span className="text-red-500">*</span>
-                </label>
-                <textarea
-                  value={respuesta}
-                  onChange={(e) => setRespuesta(e.target.value)}
-                  required
-                  rows={4}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                  placeholder="Describe cómo has seguido las instrucciones..."
-                />
-              </div>
+              {/* Loading de preguntas */}
+              {loadingPreguntas && (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600 mx-auto"></div>
+                  <p className="text-gray-500 mt-2">Cargando preguntas...</p>
+                </div>
+              )}
 
-              {/* Cumplimiento */}
-              <div className="flex items-center gap-3">
-                <input
-                  type="checkbox"
-                  id="cumplimiento"
-                  checked={cumplimiento}
-                  onChange={(e) => setCumplimiento(e.target.checked)}
-                  className="w-4 h-4 text-teal-600 rounded focus:ring-teal-500"
-                />
-                <label htmlFor="cumplimiento" className="text-sm text-gray-700">
-                  He cumplido con las instrucciones
-                </label>
-              </div>
+              {/* Preguntas personalizadas */}
+              {!loadingPreguntas && preguntasPersonalizadas.length > 0 && (
+                <div className="space-y-6">
+                  <div className="border-b border-gray-200 pb-2">
+                    <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                      <QuestionMarkCircleIcon className="w-5 h-5 text-teal-600" />
+                      Preguntas del seguimiento
+                    </h3>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Responde todas las preguntas para completar tu seguimiento
+                    </p>
+                  </div>
 
-              {/* Síntomas */}
-              {selectedSeguimiento.tipo_seguimiento === 'sintomas' && (
+                  {preguntasPersonalizadas.map((pregunta, index) => (
+                    <div key={pregunta.id_pregunta} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                      <div className="mb-4">
+                        <h4 className="text-sm font-medium text-gray-900 mb-1">
+                          Pregunta {index + 1} 
+                          {pregunta.obligatoria && <span className="text-red-500 ml-1">*</span>}
+                        </h4>
+                        <p className="text-gray-700">{pregunta.texto_pregunta}</p>
+                      </div>
+                      
+                      {renderPreguntaPersonalizada(pregunta)}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Formato viejo (fallback para seguimientos sin preguntas personalizadas) */}
+              {!loadingPreguntas && preguntasPersonalizadas.length === 0 && (
+                <div className="space-y-4">
+                  {/* Respuesta */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Respuesta <span className="text-red-500">*</span>
+                    </label>
+                    <textarea
+                      value={respuesta}
+                      onChange={(e) => setRespuesta(e.target.value)}
+                      required
+                      rows={4}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                      placeholder="Describe cómo has seguido las instrucciones..."
+                    />
+                  </div>
+
+                  {/* Cumplimiento */}
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="checkbox"
+                      id="cumplimiento"
+                      checked={cumplimiento}
+                      onChange={(e) => setCumplimiento(e.target.checked)}
+                      className="w-4 h-4 text-teal-600 rounded focus:ring-teal-500"
+                    />
+                    <label htmlFor="cumplimiento" className="text-sm text-gray-700">
+                      He cumplido con las instrucciones
+                    </label>
+                  </div>
+
+                  {/* Síntomas */}
+                  {selectedSeguimiento.tipo_seguimiento === 'sintomas' && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Síntomas Reportados
+                      </label>
+                      <textarea
+                        value={sintomasReportados}
+                        onChange={(e) => setSintomasReportados(e.target.value)}
+                        rows={3}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                        placeholder="¿Has experimentado algún síntoma? Descríbelo..."
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Observaciones adicionales (siempre disponible) */}
+              {!loadingPreguntas && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Síntomas Reportados
+                    Observaciones adicionales
                   </label>
                   <textarea
-                    value={sintomasReportados}
-                    onChange={(e) => setSintomasReportados(e.target.value)}
-                    rows={3}
+                    value={observaciones}
+                    onChange={(e) => setObservaciones(e.target.value)}
+                    rows={2}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                    placeholder="¿Has experimentado algún síntoma? Descríbelo..."
+                    placeholder="Agrega cualquier comentario adicional..."
                   />
                 </div>
               )}
 
-              {/* Observaciones */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Observaciones adicionales
-                </label>
-                <textarea
-                  value={observaciones}
-                  onChange={(e) => setObservaciones(e.target.value)}
-                  rows={2}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                  placeholder="Agrega cualquier comentario adicional..."
-                />
-              </div>
-
               {/* Botones */}
-              <div className="flex gap-3 pt-4">
-                <button
-                  type="button"
-                  onClick={() => setShowModalResponder(false)}
-                  className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-                  disabled={submitting}
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="flex-1 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
-                >
-                  {submitting ? 'Enviando...' : 'Enviar Respuesta'}
-                </button>
-              </div>
+              {!loadingPreguntas && (
+                <div className="flex gap-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowModalResponder(false)}
+                    className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                    disabled={submitting}
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="flex-1 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+                  >
+                    {submitting ? 'Enviando...' : 'Enviar Respuesta'}
+                  </button>
+                </div>
+              )}
             </form>
           </div>
         </div>

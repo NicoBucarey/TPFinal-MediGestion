@@ -22,4 +22,7 @@ router.get('/documentos/compartidos', checkRole(['paciente']), ClinicaController
 // Compartir/privatizar documento (profesional)
 router.patch('/documentos/:id/compartir', checkRole(['profesional']), ClinicaController.toggleCompartirDocumento);
 
+// Obtener pacientes de un profesional
+router.get('/profesional/:id/pacientes', checkRole(['profesional']), ClinicaController.obtenerPacientesProfesional);
+
 module.exports = router;

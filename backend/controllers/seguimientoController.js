@@ -1,7 +1,59 @@
 const pool = require('../db');
+const whatsappService = require('../services/whatsappService');
 
 const SeguimientoController = {
   // POST /api/seguimiento - Crear seguimiento post-consulta
+  // GET /api/seguimiento/:id/preguntas - Obtener preguntas personalizadas de un seguimiento
+  obtenerPreguntasSeguimiento: async (req, res) => {
+    const { id } = req.params;
+    const userId = req.user?.id;
+    const userRole = req.user?.rol?.toLowerCase();
+
+    try {
+      // Verificar que el seguimiento existe y el usuario tiene acceso
+      let seguimiento;
+      if (userRole === 'paciente') {
+        const result = await pool.query(
+          'SELECT * FROM seguimiento WHERE id_seguimiento = $1 AND id_paciente = $2',
+          [id, userId]
+        );
+        seguimiento = result.rows[0];
+      } else if (userRole === 'profesional') {
+        const result = await pool.query(
+          'SELECT * FROM seguimiento WHERE id_seguimiento = $1 AND id_profesional = $2',
+          [id, userId]
+        );
+        seguimiento = result.rows[0];
+      } else {
+        return res.status(403).json({ message: 'No tiene permisos para acceder a este seguimiento' });
+      }
+
+      if (!seguimiento) {
+        return res.status(404).json({ message: 'Seguimiento no encontrado o no tiene acceso' });
+      }
+
+      // Obtener preguntas personalizadas
+      const preguntasResult = await pool.query(
+        `SELECT 
+          id_pregunta,
+          texto_pregunta,
+          tipo_respuesta,
+          opciones,
+          obligatoria,
+          orden_pregunta
+         FROM pregunta_seguimiento
+         WHERE id_seguimiento = $1
+         ORDER BY orden_pregunta ASC, id_pregunta ASC`,
+        [id]
+      );
+
+      res.json(preguntasResult.rows);
+    } catch (error) {
+      console.error('Error obtenerPreguntasSeguimiento:', error);
+      res.status(500).json({ message: 'Error al obtener preguntas del seguimiento' });
+    }
+  },
+
   crearSeguimiento: async (req, res) => {
     const {
       turnoId,
@@ -16,29 +68,52 @@ const SeguimientoController = {
     const userId = req.user?.id;
     const userRole = req.user?.rol?.toLowerCase();
 
-    if (!turnoId || !pacienteId || !fechaInicio) {
-      return res.status(400).json({ message: 'turnoId, pacienteId y fechaInicio son requeridos' });
+    console.log('=== CREAR SEGUIMIENTO ===');
+    console.log('Datos recibidos:', { turnoId, pacienteId, fechaInicio, frecuenciaTipo, preguntasPersonalizadas: preguntasPersonalizadas?.length });
+    console.log('Usuario:', { userId, userRole });
+
+    if (!pacienteId || !fechaInicio) {
+      return res.status(400).json({ message: 'pacienteId y fechaInicio son requeridos' });
     }
     if (userRole !== 'profesional') {
       return res.status(403).json({ message: 'Solo profesionales pueden crear seguimientos' });
     }
 
     try {
-      // Validar que el turno existe y pertenece al profesional
-      const turnoRes = await pool.query(
-        'SELECT id_turno, id_profesional, id_paciente FROM turno WHERE id_turno = $1',
-        [turnoId]
-      );
-      if (turnoRes.rows.length === 0) {
-        return res.status(404).json({ message: 'Turno no encontrado' });
-      }
-      if (turnoRes.rows[0].id_profesional !== userId) {
-        return res.status(403).json({ message: 'No tiene permisos para crear seguimiento en este turno' });
-      }
-      if (turnoRes.rows[0].id_paciente !== Number(pacienteId)) {
-        return res.status(400).json({ message: 'El paciente no coincide con el turno' });
+      console.log('1. Validando turno...');
+      // Si hay turnoId, validar que el turno existe y pertenece al profesional
+      if (turnoId) {
+        const turnoRes = await pool.query(
+          'SELECT id_turno, id_profesional, id_paciente FROM turno WHERE id_turno = $1',
+          [turnoId]
+        );
+        if (turnoRes.rows.length === 0) {
+          return res.status(404).json({ message: 'Turno no encontrado' });
+        }
+        if (turnoRes.rows[0].id_profesional !== userId) {
+          return res.status(403).json({ message: 'No tiene permisos para crear seguimiento en este turno' });
+        }
+        if (turnoRes.rows[0].id_paciente !== Number(pacienteId)) {
+          return res.status(400).json({ message: 'El paciente no coincide con el turno' });
+        }
       }
 
+      console.log('2. Validando paciente...');
+      // Validar que el paciente existe en ambas tablas
+      const pacienteRes = await pool.query(
+        `SELECT u.id_usuario, p.id_paciente 
+         FROM usuario u
+         JOIN paciente p ON p.id_paciente = u.id_usuario
+         JOIN rol r ON r.id_rol = u.id_rol
+         WHERE u.id_usuario = $1 AND r.nombre = 'paciente'`,
+        [pacienteId]
+      );
+      if (pacienteRes.rows.length === 0) {
+        return res.status(404).json({ message: 'Paciente no encontrado o no válido' });
+      }
+      console.log('Paciente validado:', pacienteRes.rows[0]);
+
+      console.log('3. Creando seguimiento...');
       // Crear seguimiento
       const result = await pool.query(
         `INSERT INTO seguimiento (
@@ -47,7 +122,7 @@ const SeguimientoController = {
           ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
         RETURNING *`,
         [
-          turnoId,
+          turnoId || null,
           pacienteId,
           userId,
           fechaInicio,
@@ -58,13 +133,17 @@ const SeguimientoController = {
           'pendiente'
         ]
       );
+      console.log('Seguimiento creado:', result.rows[0]);
 
       const seguimientoId = result.rows[0].id_seguimiento;
 
+      console.log('4. Creando preguntas personalizadas...');
       // Crear preguntas personalizadas si existen
       if (preguntasPersonalizadas && Array.isArray(preguntasPersonalizadas) && preguntasPersonalizadas.length > 0) {
+        console.log(`Creando ${preguntasPersonalizadas.length} preguntas...`);
         for (let i = 0; i < preguntasPersonalizadas.length; i++) {
           const pregunta = preguntasPersonalizadas[i];
+          console.log(`Creando pregunta ${i + 1}:`, pregunta);
           await pool.query(
             `INSERT INTO pregunta_seguimiento (
               id_seguimiento, texto_pregunta, tipo_respuesta, opciones, obligatoria, orden_pregunta
@@ -81,13 +160,70 @@ const SeguimientoController = {
         }
       }
 
+      console.log('5. Seguimiento creado exitosamente');
+
+      // Obtener datos completos del paciente y profesional para WhatsApp
+      try {
+        console.log('6. Obteniendo datos para WhatsApp...');
+        const datosWhatsappRes = await pool.query(`
+          SELECT 
+            up.nombre as paciente_nombre,
+            up.apellido as paciente_apellido,
+            up.telefono as paciente_telefono,
+            upr.nombre as profesional_nombre,
+            upr.apellido as profesional_apellido
+          FROM usuario up
+          JOIN usuario upr ON upr.id_usuario = $2
+          WHERE up.id_usuario = $1
+        `, [pacienteId, userId]);
+
+        if (datosWhatsappRes.rows.length > 0) {
+          const datos = datosWhatsappRes.rows[0];
+          const pacienteData = {
+            nombre: `${datos.paciente_nombre} ${datos.paciente_apellido}`
+          };
+          const profesionalData = {
+            nombre: datos.profesional_nombre,
+            apellido: datos.profesional_apellido
+          };
+
+          // Enviar WhatsApp (no bloqueante)
+          if (datos.paciente_telefono) {
+            console.log('7. Enviando WhatsApp...');
+            const mensaje = whatsappService.generarMensajeSeguimiento(
+              result.rows[0], 
+              pacienteData, 
+              profesionalData
+            );
+            
+            whatsappService.enviarMensaje(datos.paciente_telefono, mensaje)
+              .then((resultadoWhatsapp) => {
+                if (resultadoWhatsapp.success) {
+                  console.log('✅ WhatsApp enviado correctamente');
+                } else {
+                  console.warn('⚠️ No se pudo enviar WhatsApp:', resultadoWhatsapp.error);
+                }
+              })
+              .catch((err) => {
+                console.error('❌ Error al enviar WhatsApp (no crítico):', err.message);
+              });
+          } else {
+            console.warn('⚠️ Paciente sin teléfono, no se envía WhatsApp');
+          }
+        }
+      } catch (whatsappError) {
+        console.error('Error al enviar WhatsApp (no crítico):', whatsappError.message);
+      }
+
       res.status(201).json({
         message: 'Seguimiento creado correctamente',
         seguimiento: result.rows[0]
       });
     } catch (error) {
-      console.error('Error crearSeguimiento:', error);
-      res.status(500).json({ message: 'Error al crear seguimiento' });
+      console.error('ERROR CREAR SEGUIMIENTO:', error);
+      console.error('Error message:', error.message);
+      console.error('Error detail:', error.detail);
+      res.status(500).json({ message: 'Error al crear seguimiento: ' + error.message });
     }
   },
 
@@ -105,10 +241,10 @@ const SeguimientoController = {
       let query = `
         SELECT s.*, 
                u.nombre || ' ' || u.apellido as paciente_nombre,
-            t.fecha as turno_fecha
+               t.fecha as turno_fecha
         FROM seguimiento s
         JOIN usuario u ON u.id_usuario = s.id_paciente
-        JOIN turno t ON t.id_turno = s.id_turno
+        LEFT JOIN turno t ON t.id_turno = s.id_turno
         WHERE s.id_profesional = $1
       `;
       const params = [id];
@@ -149,7 +285,7 @@ const SeguimientoController = {
             AND rs.id_paciente = s.id_paciente
           ) as tiene_respuestas
         FROM seguimiento s
-        JOIN turno t ON t.id_turno = s.id_turno
+        LEFT JOIN turno t ON t.id_turno = s.id_turno
         LEFT JOIN profesional prof ON prof.id_profesional = s.id_profesional
         LEFT JOIN usuario up ON up.id_usuario = prof.id_profesional
         WHERE s.id_paciente = $1

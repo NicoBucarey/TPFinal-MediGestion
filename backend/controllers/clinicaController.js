@@ -255,6 +255,38 @@ const ClinicaController = {
       console.error('Error obtenerDocumentosCompartidos:', e);
       res.status(500).json({ message: 'Error al obtener documentos compartidos' });
     }
+  },
+
+  // GET /api/profesional/:id/pacientes - Obtener pacientes de un profesional
+  obtenerPacientesProfesional: async (req, res) => {
+    const { id } = req.params;
+    const userId = req.user?.id;
+    const userRole = req.user?.rol?.toLowerCase();
+
+    if (userRole !== 'profesional') {
+      return res.status(403).json({ message: 'Solo profesionales pueden acceder a esta información' });
+    }
+    if (Number(id) !== userId) {
+      return res.status(403).json({ message: 'No autorizado' });
+    }
+
+    try {
+      // Obtener pacientes que han tenido turnos con este profesional
+      const pacientesRes = await pool.query(
+        `SELECT DISTINCT u.id_usuario, u.nombre, u.apellido, u.mail as email, u.telefono
+         FROM usuario u
+         JOIN paciente p ON p.id_paciente = u.id_usuario
+         JOIN turno t ON t.id_paciente = p.id_paciente
+         WHERE t.id_profesional = $1 AND u.id_rol = (SELECT id_rol FROM rol WHERE nombre = 'paciente')
+         ORDER BY u.nombre, u.apellido`,
+        [id]
+      );
+
+      res.json(pacientesRes.rows);
+    } catch (e) {
+      console.error('Error obtenerPacientesProfesional:', e);
+      res.status(500).json({ message: 'Error al obtener pacientes' });
+    }
   }
 };
 

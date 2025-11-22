@@ -2,17 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
 import { useAuthStore } from '../../stores/authStore';
 import { Link } from 'react-router-dom';
-import { ClipboardDocumentListIcon, ChatBubbleBottomCenterTextIcon } from '@heroicons/react/24/outline';
-import {
-  ResponsiveContainer,
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  Tooltip,
-  CartesianGrid,
-  Legend
-} from 'recharts';
+import { ClipboardDocumentListIcon, ChatBubbleBottomCenterTextIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { toast } from 'sonner';
 
 const API = import.meta.env.VITE_API_URL;
@@ -133,142 +123,200 @@ const Seguimientos = () => {
             </h2>
             <p className="text-gray-600">Gestión de seguimientos post-consulta</p>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-2">
-              <input type="date" value={desde} onChange={(e) => setDesde(e.target.value)} className="border rounded-lg px-2 py-1" />
-              <span className="text-gray-500">a</span>
-              <input type="date" value={hasta} onChange={(e) => setHasta(e.target.value)} className="border rounded-lg px-2 py-1" />
-            </div>
-            <select
-              value={filtroEstado}
-              onChange={(e) => setFiltroEstado(e.target.value)}
-              className="border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#00796B]"
+          
+          <div className="flex items-center gap-4">
+            {/* Botón Crear Seguimiento Rápido */}
+            <Link
+              to="/dashboard/profesional/seguimiento/seleccionar-paciente"
+              className="inline-flex items-center gap-2 bg-gradient-to-r from-[#00796B] to-[#004D40] hover:from-[#00695c] hover:to-[#00251a] text-white font-semibold px-6 py-3 rounded-xl shadow-lg transition-all duration-200 transform hover:scale-105"
             >
-              <option value="">Todos</option>
-              <option value="pendiente">Pendiente</option>
-              <option value="en_curso">En curso</option>
-              <option value="completado">Completado</option>
-              <option value="vencido">Vencido</option>
-            </select>
+              <PlusIcon className="w-5 h-5" />
+              Crear Seguimiento
+            </Link>
+            
+            {/* Filtros */}
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2">
+                <input type="date" value={desde} onChange={(e) => setDesde(e.target.value)} className="border rounded-lg px-2 py-1" />
+                <span className="text-gray-500">a</span>
+                <input type="date" value={hasta} onChange={(e) => setHasta(e.target.value)} className="border rounded-lg px-2 py-1" />
+              </div>
+              <select
+                value={filtroEstado}
+                onChange={(e) => setFiltroEstado(e.target.value)}
+                className="border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#00796B]"
+              >
+                <option value="">Todos</option>
+                <option value="pendiente">Pendiente</option>
+                <option value="en_curso">En curso</option>
+                <option value="completado">Completado</option>
+                <option value="vencido">Vencido</option>
+              </select>
+            </div>
           </div>
         </div>
 
         {stats && (
-          <>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-              <div className="bg-white rounded-xl p-4 shadow">
-                <div className="text-sm text-gray-500">Total</div>
-                <div className="text-2xl font-bold">{stats.resumen.total}</div>
-              </div>
-              <div className="bg-white rounded-xl p-4 shadow">
-                <div className="text-sm text-gray-500">Completado</div>
-                <div className="text-2xl font-bold text-green-600">{stats.resumen.completado}</div>
-              </div>
-              <div className="bg-white rounded-xl p-4 shadow">
-                <div className="text-sm text-gray-500">Pendiente</div>
-                <div className="text-2xl font-bold text-yellow-600">{stats.resumen.pendiente}</div>
-              </div>
-              <div className="bg-white rounded-xl p-4 shadow">
-                <div className="text-sm text-gray-500">Vencido</div>
-                <div className="text-2xl font-bold text-red-600">{stats.resumen.vencido}</div>
-              </div>
-              <div className="bg-white rounded-xl p-4 shadow">
-                <div className="text-sm text-gray-500">Cumplimiento</div>
-                <div className="text-2xl font-bold text-[#00796B]">{cumplimiento}%</div>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-shadow duration-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm font-medium text-gray-500 mb-1">Total</div>
+                  <div className="text-3xl font-bold text-gray-900">{stats.resumen.total}</div>
+                </div>
+                <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
+                  <ClipboardDocumentListIcon className="w-6 h-6 text-gray-600" />
+                </div>
               </div>
             </div>
-
-            <div className="bg-white rounded-2xl shadow p-4">
-              <div className="text-sm font-medium text-gray-700 mb-2">Evolución (últimos días)</div>
-              <div className="w-full h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={stats.serie} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                    <defs>
-                      <linearGradient id="colorComp" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#16a34a" stopOpacity={0.6}/>
-                        <stop offset="95%" stopColor="#16a34a" stopOpacity={0}/>
-                      </linearGradient>
-                      <linearGradient id="colorVenc" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#dc2626" stopOpacity={0.6}/>
-                        <stop offset="95%" stopColor="#dc2626" stopOpacity={0}/>
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="fecha" tickFormatter={(d) => new Date(d).toLocaleDateString()} />
-                    <YAxis allowDecimals={false} />
-                    <Tooltip labelFormatter={(d) => new Date(d).toLocaleDateString()} />
-                    <Legend />
-                    <Area type="monotone" name="Completados" dataKey="completado" stroke="#16a34a" fillOpacity={1} fill="url(#colorComp)" />
-                    <Area type="monotone" name="Vencidos" dataKey="vencido" stroke="#dc2626" fillOpacity={1} fill="url(#colorVenc)" />
-                  </AreaChart>
-                </ResponsiveContainer>
+            
+            <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-shadow duration-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm font-medium text-gray-500 mb-1">Completado</div>
+                  <div className="text-3xl font-bold text-green-600">{stats.resumen.completado}</div>
+                </div>
+                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                  <span className="text-green-600 text-xl font-bold">✓</span>
+                </div>
               </div>
             </div>
-          </>
+            
+            <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-shadow duration-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm font-medium text-gray-500 mb-1">Pendiente</div>
+                  <div className="text-3xl font-bold text-yellow-600">{stats.resumen.pendiente}</div>
+                </div>
+                <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+                  <span className="text-yellow-600 text-xl font-bold">⏳</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-shadow duration-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm font-medium text-gray-500 mb-1">Vencido</div>
+                  <div className="text-3xl font-bold text-red-600">{stats.resumen.vencido}</div>
+                </div>
+                <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
+                  <span className="text-red-600 text-xl font-bold">⚠️</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-shadow duration-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm font-medium text-gray-500 mb-1">Cumplimiento</div>
+                  <div className="text-3xl font-bold text-[#00796B]">{cumplimiento}%</div>
+                </div>
+                <div className="w-12 h-12 bg-[#00796B]/10 rounded-lg flex items-center justify-center">
+                  <span className="text-[#00796B] text-xl font-bold">📊</span>
+                </div>
+              </div>
+            </div>
+          </div>
         )}
 
-        <div className="bg-white rounded-2xl shadow overflow-hidden">
-          <table className="min-w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500">Paciente</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500">Fecha inicio</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500">Frecuencia</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500">Tipo</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500">Estado</th>
-                <th className="px-6 py-3 text-center text-xs font-semibold text-gray-500">Respuestas</th>
-                <th className="px-6 py-3"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+          <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-6 border-b border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-900">Lista de Seguimientos</h3>
+            <p className="text-sm text-gray-600 mt-1">Gestiona todos los seguimientos activos y completos</p>
+          </div>
+          
+          <div className="overflow-x-auto">
+            <table className="min-w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <td colSpan={7} className="px-6 py-6">
-                    Cargando...
-                  </td>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Paciente</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Fecha inicio</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Frecuencia</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Tipo</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Estado</th>
+                  <th className="px-6 py-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Respuestas</th>
+                  <th className="px-6 py-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Acciones</th>
                 </tr>
-              ) : seguimientos.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="px-6 py-6 text-center text-gray-500">
-                    No hay seguimientos
-                  </td>
-                </tr>
-              ) : (
-                seguimientos.map((s) => (
-                  <tr key={s.id_seguimiento} className="border-t hover:bg-gray-50">
-                    <td className="px-6 py-4 text-sm font-medium text-gray-900">{s.paciente_nombre}</td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
-                        {new Date(s.fecha_inicio).toLocaleDateString()}
-                    </td>
-                      <td className="px-6 py-4 text-sm text-gray-600 capitalize">{s.frecuencia_tipo || 'unica'}</td>
-                      <td className="px-6 py-4 text-sm text-gray-600 capitalize">{s.tipo_seguimiento || 'texto'}</td>
-                    <td className="px-6 py-4">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${estadoBadge(s.estado)}`}>
-                          {s.estado.replace('_', ' ')}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <button
-                        onClick={() => handleVerRespuestas(s)}
-                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md bg-blue-50 hover:bg-blue-100 text-blue-700 text-sm"
-                      >
-                        <ChatBubbleBottomCenterTextIcon className="w-4 h-4" />
-                        Ver
-                      </button>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <Link
-                        to={`/dashboard/profesional/seguimiento/${s.id_seguimiento}`}
-                        className="px-3 py-1.5 rounded-md bg-gray-100 hover:bg-gray-200 text-sm"
-                      >
-                        Ver detalle
-                      </Link>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-100">
+                {loading ? (
+                  <tr>
+                    <td colSpan={7} className="px-6 py-12 text-center">
+                      <div className="flex items-center justify-center space-x-3">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#00796B]"></div>
+                        <span className="text-gray-500 font-medium">Cargando seguimientos...</span>
+                      </div>
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ) : seguimientos.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="px-6 py-12 text-center">
+                      <div className="flex flex-col items-center">
+                        <ClipboardDocumentListIcon className="w-16 h-16 text-gray-300 mb-4" />
+                        <p className="text-gray-500 font-medium">No hay seguimientos</p>
+                        <p className="text-gray-400 text-sm mt-1">Crea tu primer seguimiento desde "Mis Turnos"</p>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  seguimientos.map((s) => (
+                    <tr key={s.id_seguimiento} className="hover:bg-gray-50 transition-colors duration-150">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center">
+                          <div className="w-10 h-10 bg-gradient-to-br from-[#00796B] to-[#004D40] rounded-full flex items-center justify-center text-white font-bold text-sm mr-3">
+                            {s.paciente_nombre ? s.paciente_nombre.charAt(0).toUpperCase() : 'P'}
+                          </div>
+                          <div>
+                            <div className="text-sm font-medium text-gray-900">{s.paciente_nombre}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-600">
+                        {new Date(s.fecha_inicio).toLocaleDateString('es-ES', {
+                          day: '2-digit',
+                          month: '2-digit', 
+                          year: 'numeric'
+                        })}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 capitalize">
+                          {s.frecuencia_tipo || 'única'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 capitalize">
+                          {s.tipo_seguimiento || 'texto'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${estadoBadge(s.estado)}`}>
+                          {s.estado.replace('_', ' ')}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <button
+                          onClick={() => handleVerRespuestas(s)}
+                          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 text-sm font-medium transition-colors duration-150"
+                        >
+                          <ChatBubbleBottomCenterTextIcon className="w-4 h-4" />
+                          Ver
+                        </button>
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <Link
+                          to={`/dashboard/profesional/seguimiento/${s.id_seguimiento}`}
+                          className="inline-flex items-center px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium transition-colors duration-150"
+                        >
+                          Ver detalle
+                        </Link>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
@@ -337,6 +385,55 @@ const Seguimientos = () => {
                           {resp.respuesta}
                         </p>
                       </div>
+
+                      {/* Respuestas a preguntas personalizadas */}
+                      {resp.respuestas_preguntas_personalizadas && resp.respuestas_preguntas_personalizadas.length > 0 && (
+                        <div className="mb-3 p-3 bg-purple-50 rounded border border-purple-200">
+                          <p className="text-sm font-semibold text-purple-900 mb-3">
+                            ❓ Respuestas a preguntas específicas:
+                          </p>
+                          <div className="space-y-3">
+                            {resp.respuestas_preguntas_personalizadas.map((respPregunta) => (
+                              <div key={respPregunta.id_respuesta_pregunta} className="bg-white p-3 rounded border border-purple-100">
+                                <p className="text-sm font-medium text-gray-900 mb-2">
+                                  {respPregunta.texto_pregunta}
+                                </p>
+                                <div className="text-sm text-gray-700">
+                                  {respPregunta.tipo_respuesta === 'texto' && (
+                                    <p className="bg-gray-50 p-2 rounded text-gray-800">
+                                      {respPregunta.respuesta_texto}
+                                    </p>
+                                  )}
+                                  {respPregunta.tipo_respuesta === 'escala' && (
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-medium">Escala:</span>
+                                      <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full font-bold">
+                                        {respPregunta.respuesta_numerica}/10
+                                      </span>
+                                    </div>
+                                  )}
+                                  {respPregunta.tipo_respuesta === 'sino' && (
+                                    <div className="flex items-center gap-2">
+                                      <span className={`px-3 py-1 rounded-full font-medium ${
+                                        respPregunta.respuesta_booleana 
+                                          ? 'bg-green-100 text-green-800' 
+                                          : 'bg-red-100 text-red-800'
+                                      }`}>
+                                        {respPregunta.respuesta_booleana ? '✓ Sí' : '✗ No'}
+                                      </span>
+                                    </div>
+                                  )}
+                                  {respPregunta.tipo_respuesta === 'opcion' && (
+                                    <p className="bg-yellow-50 p-2 rounded text-yellow-800 font-medium">
+                                      {respPregunta.respuesta_opcion}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
 
                       {resp.sintomas_reportados && (
                         <div className="mb-3 p-3 bg-orange-50 rounded border border-orange-200">

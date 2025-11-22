@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
 import { toast } from 'sonner';
 import { ClipboardDocumentCheckIcon } from '@heroicons/react/24/outline';
@@ -10,10 +10,15 @@ const API = import.meta.env.VITE_API_URL;
 const ProgramarSeguimiento = () => {
   const { turnoId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const token = useAuthStore((s) => s.token) || localStorage.getItem('token');
   const user = useAuthStore((s) => s.user);
 
+  // Paciente puede venir desde la selección o desde un turno específico
+  const pacienteSeleccionado = location.state?.paciente;
+  
   const [turno, setTurno] = useState(null);
+  const [paciente, setPaciente] = useState(pacienteSeleccionado || null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -35,20 +40,38 @@ const ProgramarSeguimiento = () => {
   });
 
   useEffect(() => {
-    const fetchTurno = async () => {
-      try {
-        const res = await axios.get(`${API}/clinica/turno/${turnoId}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setTurno(res.data);
-      } catch (e) {
-        toast.error('Error al cargar el turno');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchTurno();
-  }, [turnoId, token]);
+    if (turnoId) {
+      // Modo turno específico
+      fetchTurno();
+    } else if (pacienteSeleccionado) {
+      // Modo paciente seleccionado
+      setPaciente(pacienteSeleccionado);
+      setLoading(false);
+    } else {
+      // Sin contexto, redirigir a selección
+      navigate('/dashboard/profesional/seguimiento/seleccionar-paciente');
+    }
+  }, [turnoId, pacienteSeleccionado, navigate]);
+
+  const fetchTurno = async () => {
+    try {
+      const res = await axios.get(`${API}/clinica/turno/${turnoId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setTurno(res.data);
+      // Extraer información del paciente del turno
+      setPaciente({
+        id: res.data.id_paciente,
+        nombre: res.data.pac_nombre,
+        apellido: res.data.pac_apellido
+      });
+    } catch (e) {
+      toast.error('Error al cargar el turno');
+      navigate('/dashboard/profesional/seguimientos');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -101,20 +124,24 @@ const ProgramarSeguimiento = () => {
       toast.error('Fecha de inicio es obligatoria');
       return;
     }
+    if (!paciente?.id) {
+      toast.error('No se ha seleccionado un paciente válido');
+      return;
+    }
     setSaving(true);
     try {
-      await axios.post(
-        `${API}/seguimiento`,
-        {
-          turnoId,
-          pacienteId: turno.id_paciente,
-          ...formData,
-          preguntasPersonalizadas: formData.preguntasPersonalizadas
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const payload = {
+        turnoId: turno?.id_turno || null,
+        pacienteId: paciente.id,
+        ...formData,
+        preguntasPersonalizadas: formData.preguntasPersonalizadas
+      };
+      
+      await axios.post(`${API}/seguimiento`, payload, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       toast.success('Seguimiento programado correctamente');
-      navigate(`/dashboard/profesional/seguimientos`);
+      navigate('/dashboard/profesional/seguimientos');
     } catch (e) {
       toast.error(e.response?.data?.message || 'Error al programar seguimiento');
     } finally {
@@ -144,36 +171,45 @@ const ProgramarSeguimiento = () => {
           <p className="text-lg text-gray-600 max-w-md mx-auto">Configura el seguimiento post-consulta personalizado</p>
         </div>
 
-        {/* Tarjeta del paciente y turno mejorada */}
+        {/* Tarjeta del paciente mejorada */}
         <div className="bg-gradient-to-r from-white to-gray-50 rounded-3xl shadow-lg border border-gray-100 p-8 mb-8">
           <div className="text-center">
             <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-green-500 to-teal-600 rounded-full mb-4">
               <span className="text-2xl text-white font-bold">
-                {turno?.pac_nombre ? `${turno.pac_nombre.charAt(0)}${turno.pac_apellido?.charAt(0) || ''}` : '👤'}
+                {paciente?.nombre ? `${paciente.nombre.charAt(0)}${paciente.apellido?.charAt(0) || ''}` : '👤'}
               </span>
             </div>
             <h2 className="text-2xl font-bold text-gray-900 mb-2">
-              {turno?.pac_nombre ? `${turno.pac_nombre} ${turno.pac_apellido}` : 'Paciente no especificado'}
+              {paciente ? `${paciente.nombre} ${paciente.apellido || ''}` : 'Paciente no especificado'}
             </h2>
             <div className="inline-flex items-center gap-6 text-gray-600 bg-white rounded-full px-6 py-3 shadow-sm">
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                <span className="font-medium">
-                  {turno?.fecha ? new Date(turno.fecha).toLocaleDateString('es-ES', {
-                    weekday: 'long',
-                    year: 'numeric', 
-                    month: 'long',
-                    day: 'numeric'
-                  }) : 'Fecha no disponible'}
-                </span>
-              </div>
-              <div className="w-px h-4 bg-gray-300"></div>
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                <span className="font-medium text-green-700 bg-green-50 px-2 py-1 rounded">
-                  {turno?.estado || 'Estado no disponible'}
-                </span>
-              </div>
+              {turno?.fecha ? (
+                <>
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                    <span className="font-medium">
+                      {new Date(turno.fecha).toLocaleDateString('es-ES', {
+                        weekday: 'long',
+                        year: 'numeric', 
+                        month: 'long',
+                        day: 'numeric'
+                      })}
+                    </span>
+                  </div>
+                  <div className="w-px h-4 bg-gray-300"></div>
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                    <span className="font-medium text-green-700 bg-green-50 px-2 py-1 rounded">
+                      {turno.estado}
+                    </span>
+                  </div>
+                </>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                  <span className="font-medium">Seguimiento directo</span>
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -17,6 +17,9 @@ router.get('/paciente/:id', checkRole(['paciente']), SeguimientoController.obten
 // Detalle de seguimiento
 router.get('/:id', checkRole(['profesional', 'paciente']), SeguimientoController.obtenerSeguimientoDetalle);
 
+// Obtener preguntas personalizadas de un seguimiento
+router.get('/:id/preguntas', checkRole(['profesional', 'paciente']), SeguimientoController.obtenerPreguntasSeguimiento);
+
 // Actualizar estado del seguimiento
 router.patch('/:id/estado', checkRole(['profesional', 'paciente']), SeguimientoController.actualizarEstado);
 
