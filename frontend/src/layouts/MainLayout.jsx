@@ -37,11 +37,11 @@ const MainLayout = () => {
 
   return (
     <div className={`min-h-screen flex flex-col bg-secondary-light ${getRoleClass()}`}>
-      {/* Header fixed */}
-      <Header className="fixed top-0 left-0 right-0 z-50 bg-white shadow-sm h-16" />
+      {/* Header in normal document flow */}
+      <Header className="bg-white shadow-sm h-16" />
 
-      {/* Main layout: leave space for header (64px) so content doesn't hide under it */}
-      <div className="flex flex-1 pt-16">
+      {/* Main layout: sidebar + content */}
+      <div className="flex flex-1">
         {isAuthenticated && isDashboardRoute && (
           <Sidebar className="w-64 bg-white shadow-md z-40 overflow-y-auto" />
         )}
@@ -49,7 +49,7 @@ const MainLayout = () => {
         <main className={`flex-1 overflow-y-auto ${
           isAuthenticated && isDashboardRoute ? 'w-[calc(100%-16rem)]' : 'w-full'
         }`}>
-          <div className="min-h-[calc(100vh-4rem)]">
+          <div className="min-h-screen">
             <Outlet />
           </div>
         </main>

@@ -49,15 +49,29 @@ const obtenerPerfil = async (req, res) => {
     }
 
     const row = result.rows[0];
-    res.json({
+    const base = {
       nombre: row.nombre || '',
       apellido: row.apellido || '',
       email: row.email || '',
       telefono: row.telefono || '',
-      dni: row.dni || '',
-      direccion: row.direccion || '',
-      fecha_nacimiento: row.fecha_nacimiento || ''
-    });
+      rol: userRole,
+    };
+    if (userRole === 'profesional') {
+      return res.json({
+        ...base,
+        profesion: row.profesion || '',
+        especialidad: row.especialidad || ''
+      });
+    }
+    if (userRole === 'paciente') {
+      return res.json({
+        ...base,
+        dni: row.dni || '',
+        fecha_nacimiento: row.fecha_nacimiento || ''
+      });
+    }
+    // secretario (solo comunes)
+    return res.json(base);
   } catch (error) {
     console.error('Error al obtener perfil:', error.message);
     res.status(500).json({ error: 'Error al obtener el perfil' });
@@ -69,7 +83,7 @@ const actualizarPerfil = async (req, res) => {
   try {
     const userId = req.user.id;
     const userRole = req.user.rol;
-    const { nombre, apellido, email, telefono, dni, direccion, fecha_nacimiento } = req.body;
+    const { nombre, apellido, email, telefono, profesion, especialidad, dni, fecha_nacimiento } = req.body;
 
     // Validaciones básicas
     if (!nombre || !apellido || !email) {
@@ -87,9 +101,13 @@ const actualizarPerfil = async (req, res) => {
         [nombre, apellido, telefono, email, userId]
       );
 
-      // Determinar la tabla y actualizar según el rol
       // Actualizar datos específicos según rol
-      if (userRole === 'paciente') {
+      if (userRole === 'profesional') {
+        await client.query(
+          'UPDATE profesional SET profesion = $1, especialidad = $2 WHERE id_profesional = $3',
+          [profesion || null, especialidad || null, userId]
+        );
+      } else if (userRole === 'paciente') {
         await client.query(
           'UPDATE paciente SET fecha_nac = $1, dni = $2 WHERE id_paciente = $3',
           [fecha_nacimiento || null, dni || null, userId]
@@ -100,7 +118,7 @@ const actualizarPerfil = async (req, res) => {
 
       res.json({ 
         message: 'Perfil actualizado correctamente',
-        usuario: { nombre, apellido, email }
+        usuario: { nombre, apellido, email, telefono, rol: userRole }
       });
     } catch (error) {
       await client.query('ROLLBACK');

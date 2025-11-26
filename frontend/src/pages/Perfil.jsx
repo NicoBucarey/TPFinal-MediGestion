@@ -12,15 +12,18 @@ import {
 } from '@heroicons/react/24/outline';
 
 const Perfil = () => {
-  const { user, setUser } = useAuthStore();
+  const { user, updateUser } = useAuthStore();
   const [loading, setLoading] = useState(false);
   const [datosPersonales, setDatosPersonales] = useState({
     nombre: '',
     apellido: '',
     email: '',
     telefono: '',
+    // profesional
+    profesion: '',
+    especialidad: '',
+    // paciente
     dni: '',
-    direccion: '',
     fecha_nacimiento: ''
   });
   const [cambiarPassword, setCambiarPassword] = useState(false);
@@ -43,16 +46,18 @@ const Perfil = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
 
-      setDatosPersonales({
+      setDatosPersonales(prev => ({
+        ...prev,
         nombre: response.data.nombre || '',
         apellido: response.data.apellido || '',
         email: response.data.email || '',
         telefono: response.data.telefono || '',
+        profesion: response.data.profesion || '',
+        especialidad: response.data.especialidad || '',
         dni: response.data.dni || '',
-        direccion: response.data.direccion || '',
         fecha_nacimiento: response.data.fecha_nacimiento ? 
-          response.data.fecha_nacimiento.split('T')[0] : ''
-      });
+          String(response.data.fecha_nacimiento).split('T')[0] : ''
+      }));
     } catch (error) {
       console.error('Error al cargar perfil:', error);
       toast.error('Error al cargar el perfil');
@@ -67,12 +72,27 @@ const Perfil = () => {
       const token = localStorage.getItem('token');
       const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
-      const response = await axios.put(`${API_URL}/perfil`, datosPersonales, {
+      // Construir payload según rol
+      const payload = {
+        nombre: datosPersonales.nombre,
+        apellido: datosPersonales.apellido,
+        email: datosPersonales.email,
+        telefono: datosPersonales.telefono,
+      };
+      if (user?.rol === 'profesional') {
+        payload.profesion = datosPersonales.profesion || null;
+        payload.especialidad = datosPersonales.especialidad || null;
+      } else if (user?.rol === 'paciente') {
+        payload.dni = datosPersonales.dni || null;
+        payload.fecha_nacimiento = datosPersonales.fecha_nacimiento || null;
+      }
+
+      const response = await axios.put(`${API_URL}/perfil`, payload, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
       // Actualizar el usuario en el store
-      setUser({ ...user, ...datosPersonales });
+      updateUser({ nombre: datosPersonales.nombre, apellido: datosPersonales.apellido, telefono: datosPersonales.telefono, mail: datosPersonales.email });
       
       toast.success('Perfil actualizado correctamente');
     } catch (error) {
@@ -228,41 +248,51 @@ const Perfil = () => {
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    DNI
-                  </label>
-                  <input
-                    type="text"
-                    value={datosPersonales.dni}
-                    onChange={(e) => setDatosPersonales({...datosPersonales, dni: e.target.value})}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                  />
-                </div>
+                {user?.rol === 'profesional' && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Profesión</label>
+                      <input
+                        type="text"
+                        value={datosPersonales.profesion}
+                        onChange={(e) => setDatosPersonales({...datosPersonales, profesion: e.target.value})}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Especialidad</label>
+                      <input
+                        type="text"
+                        value={datosPersonales.especialidad}
+                        onChange={(e) => setDatosPersonales({...datosPersonales, especialidad: e.target.value})}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                      />
+                    </div>
+                  </>
+                )}
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Fecha de Nacimiento
-                  </label>
-                  <input
-                    type="date"
-                    value={datosPersonales.fecha_nacimiento}
-                    onChange={(e) => setDatosPersonales({...datosPersonales, fecha_nacimiento: e.target.value})}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                  />
-                </div>
-
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Dirección
-                  </label>
-                  <input
-                    type="text"
-                    value={datosPersonales.direccion}
-                    onChange={(e) => setDatosPersonales({...datosPersonales, direccion: e.target.value})}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                  />
-                </div>
+                {user?.rol === 'paciente' && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">DNI</label>
+                      <input
+                        type="text"
+                        value={datosPersonales.dni}
+                        onChange={(e) => setDatosPersonales({...datosPersonales, dni: e.target.value})}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Fecha de Nacimiento</label>
+                      <input
+                        type="date"
+                        value={datosPersonales.fecha_nacimiento}
+                        onChange={(e) => setDatosPersonales({...datosPersonales, fecha_nacimiento: e.target.value})}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                      />
+                    </div>
+                  </>
+                )}
               </div>
 
               <div className="mt-6 flex justify-end">

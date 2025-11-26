@@ -1,14 +1,26 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import useAuth from '../hooks/useAuth';
+import { useState, useEffect } from 'react';
 
 const Header = ({ className = '' }) => {
   const { user, isAuthenticated } = useAuthStore();
   const { handleLogout } = useAuth();
   const navigate = useNavigate();
+  const [isVisible, setIsVisible] = useState(true);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      // Mostrar header solo cuando estamos en el tope de la página
+      setIsVisible(window.scrollY === 0);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   return (
-    <header className={`${className}`}>
+    <header className={`${className} transition-opacity duration-300 ${isVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
       <nav className="h-full px-4">
         <div className="flex items-center justify-between h-full">
           <Link to="/" className="flex items-center" aria-label="Ir al inicio">
