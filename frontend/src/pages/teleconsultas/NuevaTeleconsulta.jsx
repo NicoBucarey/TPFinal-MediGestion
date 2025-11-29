@@ -20,7 +20,6 @@ const NuevaTeleconsulta = () => {
   };
 
   const handleProfesionalSelect = (event) => {
-    // Solo guardamos el ID del profesional
     setProfesionalSeleccionado(event.target.value);
   };
 
@@ -51,103 +50,154 @@ const NuevaTeleconsulta = () => {
         toast.success('¡Teleconsulta programada exitosamente!', {
           description: `Teleconsulta agendada para ${fechaTeleconsulta.toLocaleString()}`
         });
-        
-        // Cerrar el modal y redirigir al dashboard
+
         setModalAbierto(false);
-        navigate('/dashboard'); // Redirige al dashboard
+        navigate('/dashboard');
       } else {
         const errorData = await response.json();
-        console.error('Error del servidor:', errorData);
         toast.error('Error al programar la teleconsulta', {
           description: errorData.error || errorData.message || 'Por favor, intente nuevamente'
         });
       }
     } catch (error) {
-      console.error('Error al guardar la teleconsulta:', error);
       toast.error('Error al programar la teleconsulta', {
         description: 'Hubo un problema al conectar con el servidor'
       });
     }
   };
 
+  const getCurrentStep = () => {
+    if (!pacienteSeleccionado) return 1;
+    if (!profesionalSeleccionado) return 2;
+    return 3;
+  };
+
+  const paso = getCurrentStep();
+
   return (
     <div className="p-6">
-      <div className="flex items-center mb-6">
-        <div className="w-8 h-8 text-green-600 mr-3">
-          <svg fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
+      <div className="w-full">
+        <div className="flex items-baseline mb-6">
+          <svg fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor" className="w-7 h-7 text-green-600 mr-3 translate-y-0.5">
             <path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
           </svg>
+          <h1 className="text-3xl font-bold">Nueva Teleconsulta</h1>
         </div>
-        <h1 className="text-2xl font-semibold">Nueva Teleconsulta</h1>
-      </div>
-      
-      <ConfirmacionTeleconsultaModal 
-        isOpen={modalAbierto}
-        onClose={() => setModalAbierto(false)}
-        onConfirm={handleConfirmarTeleconsulta}
-        fecha={fechaSeleccionada}
-      />
-      
-      {!pacienteSeleccionado ? (
-        <div>
-          <h2 className="text-lg font-medium mb-4">Buscar Paciente</h2>
-          <BusquedaPaciente onPacienteSelect={handlePacienteSelect} />
-        </div>
-      ) : (
-        <div className="bg-white p-4 rounded-lg shadow">
-          <div className="mb-6">
-            <h2 className="text-lg font-medium mb-2">Paciente Seleccionado</h2>
-            <div className="grid grid-cols-2 gap-4 text-gray-600">
-              <p><span className="font-medium">Nombre:</span> {pacienteSeleccionado.nombre}</p>
-              <p><span className="font-medium">Apellido:</span> {pacienteSeleccionado.apellido}</p>
-              <p><span className="font-medium">DNI:</span> {pacienteSeleccionado.dni}</p>
-              <p><span className="font-medium">Email:</span> {pacienteSeleccionado.email}</p>
-            </div>
-            <button
-              onClick={() => setPacienteSeleccionado(null)}
-              className="mt-4 text-blue-600 hover:text-blue-800"
-            >
-              Cambiar paciente
-            </button>
-          </div>
 
-          <div className="mb-6">
-            <h2 className="text-lg font-medium mb-2">Seleccionar Profesional</h2>
-            {error ? (
-              <div className="text-red-600 mb-4">{error}</div>
-            ) : (
-              <SelectProfesional
-                value={profesionalSeleccionado || ''}
-                onChange={handleProfesionalSelect}
-                className="w-full rounded-lg border-gray-300 border p-2 focus:border-blue-500 focus:ring-blue-500"
-              />
-            )}
-          </div>
-
-          {profesionalSeleccionado && (
-            <div>
-              <h2 className="text-lg font-medium mb-4">Seleccionar Horario para Teleconsulta</h2>
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
-                <div className="flex items-center">
-                  <div className="w-5 h-5 text-green-600 mr-2">
-                    <svg fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
-                      <path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </div>
-                  <p className="text-green-800 text-sm">
-                    Esta será una consulta virtual. Se enviará un enlace de reunión a ambas partes.
-                  </p>
+        {/* pasos */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between">
+            <div className={`flex-1 ${paso >= 1 ? 'text-blue-600' : 'text-gray-400'}`}>
+              <div className="flex items-center">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${paso >= 1 ? 'bg-blue-600 text-white' : 'bg-gray-300'}`}>
+                  1
                 </div>
+                <span className="ml-2 hidden sm:inline">Paciente</span>
               </div>
-              <CalendarioTurnos
-                profesionalId={profesionalSeleccionado}
-                onTurnoSelect={handleTeleconsultaSelect}
-                tipoConsulta="teleconsulta"
-              />
             </div>
-          )}
+
+            <div className={`flex-1 h-1 ${paso >= 2 ? 'bg-blue-600' : 'bg-gray-300'}`} />
+
+            <div className={`flex-1 ${paso >= 2 ? 'text-blue-600' : 'text-gray-400'}`}>
+              <div className="flex items-center justify-center">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${paso >= 2 ? 'bg-blue-600 text-white' : 'bg-gray-300'}`}>
+                  2
+                </div>
+                <span className="ml-2 hidden sm:inline">Profesional</span>
+              </div>
+            </div>
+
+            <div className={`flex-1 h-1 ${paso >= 3 ? 'bg-blue-600' : 'bg-gray-300'}`} />
+
+            <div className={`flex-1 ${paso >= 3 ? 'text-blue-600' : 'text-gray-400'}`}>
+              <div className="flex items-center justify-end">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${paso >= 3 ? 'bg-blue-600 text-white' : 'bg-gray-300'}`}>
+                  3
+                </div>
+                <span className="ml-2 hidden sm:inline">Fecha/Hora</span>
+              </div>
+            </div>
+          </div>
         </div>
-      )}
+      </div>
+
+      {/* contenedor principal */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <ConfirmacionTeleconsultaModal
+          isOpen={modalAbierto}
+          onClose={() => setModalAbierto(false)}
+          onConfirm={handleConfirmarTeleconsulta}
+          fecha={fechaSeleccionada}
+        />
+
+        {/* paso 1 */}
+        {!pacienteSeleccionado ? (
+          <div>
+            <h2 className="text-lg font-medium mb-4">Buscar Paciente</h2>
+            <BusquedaPaciente onPacienteSelect={handlePacienteSelect} />
+          </div>
+        ) : (
+          <>
+            {/* paciente */}
+            <div className="mb-6">
+              <h2 className="text-lg font-medium mb-2">Paciente Seleccionado</h2>
+              <div className="grid grid-cols-2 gap-4 text-gray-600">
+                <p><span className="font-medium">Nombre:</span> {pacienteSeleccionado.nombre}</p>
+                <p><span className="font-medium">Apellido:</span> {pacienteSeleccionado.apellido}</p>
+                <p><span className="font-medium">DNI:</span> {pacienteSeleccionado.dni}</p>
+                <p><span className="font-medium">Email:</span> {pacienteSeleccionado.email}</p>
+              </div>
+
+              <button
+                onClick={() => setPacienteSeleccionado(null)}
+                className="mt-4 text-blue-600 hover:text-blue-800"
+              >
+                Cambiar paciente
+              </button>
+            </div>
+
+            {/* profesional */}
+            <div className="mb-6">
+              <h2 className="text-lg font-medium mb-2">Seleccionar Profesional</h2>
+              {error ? (
+                <div className="text-red-600 mb-4">{error}</div>
+              ) : (
+                <SelectProfesional
+                  value={profesionalSeleccionado || ''}
+                  onChange={handleProfesionalSelect}
+                  className="w-full rounded-lg border-gray-300 border p-2 focus:border-blue-500 focus:ring-blue-500"
+                />
+              )}
+            </div>
+
+            {/* calendario */}
+            {profesionalSeleccionado && (
+              <div>
+                <h2 className="text-lg font-medium mb-4">Seleccionar Horario para Teleconsulta</h2>
+
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+                  <div className="flex items-center">
+                    <div className="w-5 h-5 text-green-600 mr-2">
+                      <svg fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
+                        <path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <p className="text-green-800 text-sm">
+                      Esta será una consulta virtual. Se enviará un enlace de reunión a ambas partes.
+                    </p>
+                  </div>
+                </div>
+
+                <CalendarioTurnos
+                  profesionalId={profesionalSeleccionado}
+                  onTurnoSelect={handleTeleconsultaSelect}
+                  tipoConsulta="teleconsulta"
+                />
+              </div>
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 };

@@ -69,64 +69,107 @@ const NuevoTurno = () => {
     }
   };
 
+  // Determinar paso actual basado en el estado
+  const getCurrentStep = () => {
+    if (!pacienteSeleccionado) return 1;
+    if (!profesionalSeleccionado) return 2;
+    return 3;
+  };
+
+  const paso = getCurrentStep();
+
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-semibold mb-6">Nuevo Turno</h1>
-      
-      <ConfirmacionTurnoModal 
-        isOpen={modalAbierto}
-        onClose={() => setModalAbierto(false)}
-        onConfirm={handleConfirmarTurno}
-        fecha={fechaSeleccionada}
-      />
-      
-      {!pacienteSeleccionado ? (
-        <div>
-          <h2 className="text-lg font-medium mb-4">Buscar Paciente</h2>
-          <BusquedaPaciente onPacienteSelect={handlePacienteSelect} />
-        </div>
-      ) : (
-        <div className="bg-white p-4 rounded-lg shadow">
-          <div className="mb-6">
-            <h2 className="text-lg font-medium mb-2">Paciente Seleccionado</h2>
-            <div className="grid grid-cols-2 gap-4 text-gray-600">
-              <p><span className="font-medium">Nombre:</span> {pacienteSeleccionado.nombre}</p>
-              <p><span className="font-medium">Apellido:</span> {pacienteSeleccionado.apellido}</p>
-              <p><span className="font-medium">DNI:</span> {pacienteSeleccionado.dni}</p>
-              <p><span className="font-medium">Email:</span> {pacienteSeleccionado.email}</p>
+      <div className="w-full">
+        <h1 className="text-3xl font-bold mb-6">Nuevo Turno</h1>
+        <div className="mb-8">
+          <div className="flex items-center justify-between">
+            <div className={`flex-1 ${paso >= 1 ? 'text-blue-600' : 'text-gray-400'}`}>
+              <div className="flex items-center">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${paso >= 1 ? 'bg-blue-600 text-white' : 'bg-gray-300'}`}>
+                  1
+                </div>
+                <span className="ml-2 hidden sm:inline">Paciente</span>
+              </div>
             </div>
-            <button
-              onClick={() => setPacienteSeleccionado(null)}
-              className="mt-4 text-blue-600 hover:text-blue-800"
-            >
-              Cambiar paciente
-            </button>
+            <div className={`flex-1 h-1 ${paso >= 2 ? 'bg-blue-600' : 'bg-gray-300'}`}></div>
+            <div className={`flex-1 ${paso >= 2 ? 'text-blue-600' : 'text-gray-400'}`}>
+              <div className="flex items-center justify-center">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${paso >= 2 ? 'bg-blue-600 text-white' : 'bg-gray-300'}`}>
+                  2
+                </div>
+                <span className="ml-2 hidden sm:inline">Profesional</span>
+              </div>
+            </div>
+            <div className={`flex-1 h-1 ${paso >= 3 ? 'bg-blue-600' : 'bg-gray-300'}`}></div>
+            <div className={`flex-1 ${paso >= 3 ? 'text-blue-600' : 'text-gray-400'}`}>
+              <div className="flex items-center justify-end">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${paso >= 3 ? 'bg-blue-600 text-white' : 'bg-gray-300'}`}>
+                  3
+                </div>
+                <span className="ml-2 hidden sm:inline">Fecha/Hora</span>
+              </div>
+            </div>
           </div>
-
-          <div className="mb-6">
-            <h2 className="text-lg font-medium mb-2">Seleccionar Profesional</h2>
-            {error ? (
-              <div className="text-red-600 mb-4">{error}</div>
-            ) : (
-              <SelectProfesional
-                value={profesionalSeleccionado || ''}
-                onChange={handleProfesionalSelect}
-                className="w-full rounded-lg border-gray-300 border p-2 focus:border-blue-500 focus:ring-blue-500"
-              />
+        </div>
+      </div>
+      
+      <div className="bg-white rounded-lg shadow p-6">
+        <ConfirmacionTurnoModal 
+          isOpen={modalAbierto}
+          onClose={() => setModalAbierto(false)}
+          onConfirm={handleConfirmarTurno}
+          fecha={fechaSeleccionada}
+        />
+        
+        {!pacienteSeleccionado ? (
+          <div>
+            <h2 className="text-lg font-medium mb-4">Buscar Paciente</h2>
+            <BusquedaPaciente onPacienteSelect={handlePacienteSelect} />
+          </div>
+        ) : (
+          <div>
+            <div className="mb-6">
+              <h2 className="text-lg font-medium mb-2">Paciente Seleccionado</h2>
+              <div className="grid grid-cols-2 gap-4 text-gray-600">
+                <p><span className="font-medium">Nombre:</span> {pacienteSeleccionado.nombre}</p>
+                <p><span className="font-medium">Apellido:</span> {pacienteSeleccionado.apellido}</p>
+                <p><span className="font-medium">DNI:</span> {pacienteSeleccionado.dni}</p>
+                <p><span className="font-medium">Email:</span> {pacienteSeleccionado.email}</p>
+              </div>
+              <button
+                onClick={() => setPacienteSeleccionado(null)}
+                className="mt-4 text-blue-600 hover:text-blue-800"
+              >
+                Cambiar paciente
+              </button>
+            </div>
+      
+            <div className="mb-6">
+              <h2 className="text-lg font-medium mb-2">Seleccionar Profesional</h2>
+              {error ? (
+                <div className="text-red-600 mb-4">{error}</div>
+              ) : (
+                <SelectProfesional
+                  value={profesionalSeleccionado || ''}
+                  onChange={handleProfesionalSelect}
+                  className="w-full rounded-lg border-gray-300 border p-2 focus:border-blue-500 focus:ring-blue-500"
+                />
+              )}
+            </div>
+      
+            {profesionalSeleccionado && (
+              <div>
+                <h2 className="text-lg font-medium mb-4">Seleccionar Horario</h2>
+                <CalendarioTurnos
+                  profesionalId={profesionalSeleccionado}
+                  onTurnoSelect={handleTurnoSelect}
+                />
+              </div>
             )}
           </div>
-
-          {profesionalSeleccionado && (
-            <div>
-              <h2 className="text-lg font-medium mb-4">Seleccionar Horario</h2>
-              <CalendarioTurnos
-                profesionalId={profesionalSeleccionado}
-                onTurnoSelect={handleTurnoSelect}
-              />
-            </div>
-          )}
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };
