@@ -262,9 +262,18 @@ const CalendarioTurnos = ({ onTurnoSelect, profesionalId, tipoConsulta = 'presen
     const clickedDate = info.date;
     const currentDate = new Date();
 
-    // Validar que no sea una fecha pasada
-    if (clickedDate < currentDate) {
+    // Validar que no sea una fecha pasada (comparar solo la fecha, no la hora)
+    const clickedDateOnly = new Date(clickedDate.getFullYear(), clickedDate.getMonth(), clickedDate.getDate());
+    const currentDateOnly = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
+    
+    if (clickedDateOnly < currentDateOnly) {
       toast.error('No se pueden seleccionar fechas pasadas');
+      return;
+    }
+
+    // Si es hoy, verificar que no sea una hora pasada
+    if (clickedDateOnly.getTime() === currentDateOnly.getTime() && clickedDate < currentDate) {
+      toast.error('No se pueden seleccionar horarios pasados');
       return;
     }
 
@@ -298,6 +307,12 @@ const CalendarioTurnos = ({ onTurnoSelect, profesionalId, tipoConsulta = 'presen
     const hora = clickedDate.getHours();
     const minutos = clickedDate.getMinutes();
 
+    console.log('🔧 CLICK DEBUG:');
+    console.log('🔧 Fecha clickeada:', clickedDate);
+    console.log('🔧 Día de la semana:', diaSemana);
+    console.log('🔧 Hora:', hora, 'Minutos:', minutos);
+    console.log('🔧 horariosProfesional:', horariosProfesional);
+
     // Validar que sea un horario válido según el profesional
     if (horariosProfesional && !esHorarioValido(diaSemana, hora, minutos, horariosProfesional)) {
       toast.error('El profesional no atiende en este horario');
@@ -309,15 +324,40 @@ const CalendarioTurnos = ({ onTurnoSelect, profesionalId, tipoConsulta = 'presen
   };
 
   const esHorarioValido = (diaSemana, hora, minutos, horarios) => {
+    console.log('🔧 VALIDACION HORARIO:');
+    console.log('🔧 diaSemana buscado:', diaSemana);
+    console.log('🔧 hora:', hora, 'minutos:', minutos);
+    console.log('🔧 horarios disponibles:', horarios);
+    
     // Si no hay horarios configurados, no permitir turnos
     if (!horarios || horarios.length === 0) {
+      console.log('🔧 No hay horarios configurados');
       return false;
     }
 
+    // Normalizar el nombre del día (quitar acentos para comparar)
+    const diaNormalizado = diaSemana
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, ''); // Quitar acentos
+
     // Buscar el horario para el día seleccionado
-    const horarioDia = horarios.find(h => h.dia_semana.toLowerCase() === diaSemana);
+    const horarioDia = horarios.find(h => {
+      const horarioDiaNormalizado = h.dia_semana
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, ''); // Quitar acentos
+      return horarioDiaNormalizado === diaNormalizado;
+    });
+    console.log('🔧 horarioDia encontrado:', horarioDia);
     
     if (!horarioDia) {
+      console.log('🔧 No se encontró horario para el día:', diaSemana);
+      return false;
+    }
+
+    if (!horarioDia.activo) {
+      console.log('🔧 El día no está activo');
       return false;
     }
 
@@ -328,7 +368,14 @@ const CalendarioTurnos = ({ onTurnoSelect, profesionalId, tipoConsulta = 'presen
     const horaFin = parseInt(horarioDia.hora_fin.split(':')[0]) * 60 + 
                     parseInt(horarioDia.hora_fin.split(':')[1]);
 
-    return horaActual >= horaInicio && horaActual < horaFin;
+    console.log('🔧 horaActual (minutos):', horaActual);
+    console.log('🔧 horaInicio (minutos):', horaInicio);
+    console.log('🔧 horaFin (minutos):', horaFin);
+
+    const esValido = horaActual >= horaInicio && horaActual < horaFin;
+    console.log('🔧 Es horario válido:', esValido);
+
+    return esValido;
   };
 
   return (
