@@ -13,9 +13,11 @@ const getDayNumber = (dia) => {
     'lunes': 1,
     'martes': 2,
     'miércoles': 3,
+    'miercoles': 3,  // Sin acento (viene del backend)
     'jueves': 4,
     'viernes': 5,
-    'sábado': 6
+    'sábado': 6,
+    'sabado': 6      // Sin acento (viene del backend)
   };
   return dias[dia.toLowerCase()];
 };
@@ -37,6 +39,13 @@ const CalendarioTurnos = ({ onTurnoSelect, profesionalId, tipoConsulta = 'presen
         const token = localStorage.getItem('token');
         // Asegurarse de que profesionalId sea solo el ID numérico
         const idProfesional = typeof profesionalId === 'object' ? profesionalId.id : profesionalId;
+        
+        // LOG TEMPORAL para depuración
+        console.log('🔧 DEBUG CalendarioTurnos:');
+        console.log('🔧 profesionalId recibido:', profesionalId);
+        console.log('🔧 idProfesional procesado:', idProfesional);
+        console.log('🔧 URL de consulta:', `${import.meta.env.VITE_API_URL}/disponibilidad/horarios/${idProfesional}`);
+        
         const response = await fetch(`${import.meta.env.VITE_API_URL}/disponibilidad/horarios/${idProfesional}`, {
           headers: {
             'Authorization': `Bearer ${token}`
@@ -48,6 +57,17 @@ const CalendarioTurnos = ({ onTurnoSelect, profesionalId, tipoConsulta = 'presen
         }
         
         const data = await response.json();
+        console.log('🔧 Datos recibidos del backend:', data);
+        console.log('🔧 Horarios detallados:');
+        data.horarios.forEach((horario, index) => {
+          console.log(`🔧 ${index + 1}. ${horario.dia_semana}: ${horario.activo ? 'ACTIVO' : 'INACTIVO'} - ${horario.hora_inicio} a ${horario.hora_fin}`);
+        });
+        console.log('🔧 Excepciones recibidas:', data.excepciones?.length || 0);
+        if (data.excepciones) {
+          data.excepciones.forEach(exc => {
+            console.log(`🔧   ${exc.fecha}: ${exc.tipo}`);
+          });
+        }
         console.log('Datos del profesional:', data);
         
         // Encontrar el horario más temprano y más tardío de los horarios disponibles
@@ -70,9 +90,52 @@ const CalendarioTurnos = ({ onTurnoSelect, profesionalId, tipoConsulta = 'presen
           editable: false
         }));
 
+        // Convertir las excepciones a eventos bloqueados del calendario
+        const excepcionesBloqueadas = (data.excepciones || []).map(excepcion => {
+          const fecha = new Date(excepcion.fecha).toISOString().split('T')[0];
+          console.log('🔧 Procesando excepción para fecha:', fecha, 'tipo:', excepcion.tipo);
+          
+          if (excepcion.tipo === 'no_disponible') {
+            // Si es día no disponible, bloquear todo el día
+            return {
+              title: 'No disponible',
+              start: fecha,
+              end: fecha,
+              allDay: true,
+              backgroundColor: '#95a5a6',
+              borderColor: '#7f8c8d',
+              textColor: '#ffffff',
+              editable: false,
+              display: 'background', // Esto hace que aparezca como fondo bloqueado
+              extendedProps: {
+                isException: true
+              }
+            };
+          } else if (excepcion.tipo === 'horario_especial') {
+            // Si es horario especial, bloquear solo el horario específico
+            return {
+              title: 'Horario especial',
+              start: `${fecha}T${excepcion.hora_inicio}`,
+              end: `${fecha}T${excepcion.hora_fin}`,
+              backgroundColor: '#f39c12',
+              borderColor: '#e67e22',
+              textColor: '#ffffff',
+              editable: false,
+              display: 'background',
+              extendedProps: {
+                isException: true
+              }
+            };
+          }
+        }).filter(Boolean); // Filtrar elementos undefined
+
+        console.log('🔧 Excepciones procesadas como eventos:', excepcionesBloqueadas);
+
         setHorarioLaboral(horariosLimite);
         setHorariosProfesional(data.horarios);
-        setEventos(prevEventos => [...prevEventos, ...turnosOcupados]);
+        console.log('🔧 SETTING horariosProfesional:', data.horarios);
+        console.log('🔧 SETTING horarioLaboral:', horariosLimite);
+        setEventos(prevEventos => [...prevEventos, ...turnosOcupados, ...excepcionesBloqueadas]);
       } catch (error) {
         console.error('Error al obtener horarios:', error);
         toast.error('Error al cargar los horarios del profesional');
@@ -205,8 +268,21 @@ const CalendarioTurnos = ({ onTurnoSelect, profesionalId, tipoConsulta = 'presen
       return;
     }
 
+    // Verificar si es una fecha con excepción (día no disponible)
+    const fechaClickeada = clickedDate.toISOString().split('T')[0];
+    const tieneExcepcion = eventos.some(evento => 
+      evento.extendedProps?.isException && 
+      (evento.start === fechaClickeada || evento.start.includes(fechaClickeada))
+    );
+
+    if (tieneExcepcion) {
+      toast.error('El profesional no está disponible en esta fecha');
+      return;
+    }
+
     // Verificar si hay un turno ocupado en este horario
     const isTurnoOcupado = eventos.some(evento => {
+      if (evento.extendedProps?.isException) return false; // Excluir excepciones de esta verificación
       const eventoStart = new Date(evento.start);
       const eventoEnd = new Date(evento.end);
       return clickedDate >= eventoStart && clickedDate < eventoEnd;
@@ -288,11 +364,20 @@ const CalendarioTurnos = ({ onTurnoSelect, profesionalId, tipoConsulta = 'presen
         selectMirror={true}
         selectConstraint="businessHours"
         slotEventOverlap={false}
-        businessHours={horariosProfesional?.map(h => ({
-          daysOfWeek: [getDayNumber(h.dia_semana)],
-          startTime: h.hora_inicio,
-          endTime: h.hora_fin
-        })) || []}
+        businessHours={(() => {
+          console.log('🔧 CALENDAR CONFIG - horariosProfesional:', horariosProfesional);
+          const businessHours = horariosProfesional?.map(h => {
+            const dayNumber = getDayNumber(h.dia_semana);
+            console.log(`🔧 CALENDAR CONFIG - Día: ${h.dia_semana}, DayNumber: ${dayNumber}, Horario: ${h.hora_inicio}-${h.hora_fin}`);
+            return {
+              daysOfWeek: [dayNumber],
+              startTime: h.hora_inicio,
+              endTime: h.hora_fin
+            };
+          }) || [];
+          console.log('🔧 CALENDAR CONFIG - businessHours final:', businessHours);
+          return businessHours;
+        })()}
         height="auto"
         slotLabelFormat={{
           hour: '2-digit',
