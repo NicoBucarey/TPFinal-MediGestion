@@ -8,12 +8,23 @@ async function crearTurnoPeriodico(req, res) {
             profesionalId, 
             pacienteId, 
             tipoPeriodicidad,
-            diaSemana,
+            diaSemana: diaSemanaOriginal,
             horaInicio,
             horaFin,
             fechaInicio,
             fechaFin 
         } = req.body;
+
+        // Normalizar día de la semana (quitar tildes)
+        const diaSemana = diaSemanaOriginal
+            .toLowerCase()
+            .replace('á', 'a')
+            .replace('é', 'e')
+            .replace('í', 'i')
+            .replace('ó', 'o')
+            .replace('ú', 'u');
+
+        console.log(`🔧 TURNO PERIODICO - Día original: ${diaSemanaOriginal}, Día normalizado: ${diaSemana}`);
 
         // Validar que la fecha fin no exceda 2 meses desde fecha inicio
         const fechaInicioObj = new Date(fechaInicio);

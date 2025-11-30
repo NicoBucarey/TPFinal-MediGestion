@@ -40,12 +40,6 @@ const CalendarioTurnos = ({ onTurnoSelect, profesionalId, tipoConsulta = 'presen
         // Asegurarse de que profesionalId sea solo el ID numérico
         const idProfesional = typeof profesionalId === 'object' ? profesionalId.id : profesionalId;
         
-        // LOG TEMPORAL para depuración
-        console.log('🔧 DEBUG CalendarioTurnos:');
-        console.log('🔧 profesionalId recibido:', profesionalId);
-        console.log('🔧 idProfesional procesado:', idProfesional);
-        console.log('🔧 URL de consulta:', `${import.meta.env.VITE_API_URL}/disponibilidad/horarios/${idProfesional}`);
-        
         const response = await fetch(`${import.meta.env.VITE_API_URL}/disponibilidad/horarios/${idProfesional}`, {
           headers: {
             'Authorization': `Bearer ${token}`
@@ -57,18 +51,6 @@ const CalendarioTurnos = ({ onTurnoSelect, profesionalId, tipoConsulta = 'presen
         }
         
         const data = await response.json();
-        console.log('🔧 Datos recibidos del backend:', data);
-        console.log('🔧 Horarios detallados:');
-        data.horarios.forEach((horario, index) => {
-          console.log(`🔧 ${index + 1}. ${horario.dia_semana}: ${horario.activo ? 'ACTIVO' : 'INACTIVO'} - ${horario.hora_inicio} a ${horario.hora_fin}`);
-        });
-        console.log('🔧 Excepciones recibidas:', data.excepciones?.length || 0);
-        if (data.excepciones) {
-          data.excepciones.forEach(exc => {
-            console.log(`🔧   ${exc.fecha}: ${exc.tipo}`);
-          });
-        }
-        console.log('Datos del profesional:', data);
         
         // Encontrar el horario más temprano y más tardío de los horarios disponibles
         const horariosLimite = data.horarios.reduce((acc, h) => {
@@ -93,7 +75,6 @@ const CalendarioTurnos = ({ onTurnoSelect, profesionalId, tipoConsulta = 'presen
         // Convertir las excepciones a eventos bloqueados del calendario
         const excepcionesBloqueadas = (data.excepciones || []).map(excepcion => {
           const fecha = new Date(excepcion.fecha).toISOString().split('T')[0];
-          console.log('🔧 Procesando excepción para fecha:', fecha, 'tipo:', excepcion.tipo);
           
           if (excepcion.tipo === 'no_disponible') {
             // Si es día no disponible, bloquear todo el día
@@ -129,12 +110,8 @@ const CalendarioTurnos = ({ onTurnoSelect, profesionalId, tipoConsulta = 'presen
           }
         }).filter(Boolean); // Filtrar elementos undefined
 
-        console.log('🔧 Excepciones procesadas como eventos:', excepcionesBloqueadas);
-
         setHorarioLaboral(horariosLimite);
         setHorariosProfesional(data.horarios);
-        console.log('🔧 SETTING horariosProfesional:', data.horarios);
-        console.log('🔧 SETTING horarioLaboral:', horariosLimite);
         setEventos(prevEventos => [...prevEventos, ...turnosOcupados, ...excepcionesBloqueadas]);
       } catch (error) {
         console.error('Error al obtener horarios:', error);
@@ -182,12 +159,22 @@ const CalendarioTurnos = ({ onTurnoSelect, profesionalId, tipoConsulta = 'presen
             ? `${turno.paciente_nombre[0]}${turno.paciente_apellido[0]}`.toUpperCase()
             : 'OC';
           
-          return {
-            title: `👤 ${iniciales}`,
-            backgroundColor: '#3b82f6', // Azul por defecto
-            borderColor: '#2563eb',
-            textColor: '#ffffff'
-          };
+          // Diferentes estilos según el tipo de consulta
+          if (turno.tipo === 'teleconsulta') {
+            return {
+              title: `🎥 ${iniciales}`,
+              backgroundColor: '#10b981', // Verde para teleconsultas
+              borderColor: '#059669',
+              textColor: '#ffffff'
+            };
+          } else {
+            return {
+              title: `👤 ${iniciales}`,
+              backgroundColor: '#3b82f6', // Azul para presenciales
+              borderColor: '#2563eb',
+              textColor: '#ffffff'
+            };
+          }
         };
         
         // Convertir los turnos a eventos del calendario con información visual mejorada
@@ -307,12 +294,6 @@ const CalendarioTurnos = ({ onTurnoSelect, profesionalId, tipoConsulta = 'presen
     const hora = clickedDate.getHours();
     const minutos = clickedDate.getMinutes();
 
-    console.log('🔧 CLICK DEBUG:');
-    console.log('🔧 Fecha clickeada:', clickedDate);
-    console.log('🔧 Día de la semana:', diaSemana);
-    console.log('🔧 Hora:', hora, 'Minutos:', minutos);
-    console.log('🔧 horariosProfesional:', horariosProfesional);
-
     // Validar que sea un horario válido según el profesional
     if (horariosProfesional && !esHorarioValido(diaSemana, hora, minutos, horariosProfesional)) {
       toast.error('El profesional no atiende en este horario');
@@ -324,14 +305,8 @@ const CalendarioTurnos = ({ onTurnoSelect, profesionalId, tipoConsulta = 'presen
   };
 
   const esHorarioValido = (diaSemana, hora, minutos, horarios) => {
-    console.log('🔧 VALIDACION HORARIO:');
-    console.log('🔧 diaSemana buscado:', diaSemana);
-    console.log('🔧 hora:', hora, 'minutos:', minutos);
-    console.log('🔧 horarios disponibles:', horarios);
-    
     // Si no hay horarios configurados, no permitir turnos
     if (!horarios || horarios.length === 0) {
-      console.log('🔧 No hay horarios configurados');
       return false;
     }
 
@@ -349,15 +324,12 @@ const CalendarioTurnos = ({ onTurnoSelect, profesionalId, tipoConsulta = 'presen
         .replace(/[\u0300-\u036f]/g, ''); // Quitar acentos
       return horarioDiaNormalizado === diaNormalizado;
     });
-    console.log('🔧 horarioDia encontrado:', horarioDia);
     
     if (!horarioDia) {
-      console.log('🔧 No se encontró horario para el día:', diaSemana);
       return false;
     }
 
     if (!horarioDia.activo) {
-      console.log('🔧 El día no está activo');
       return false;
     }
 
@@ -368,12 +340,7 @@ const CalendarioTurnos = ({ onTurnoSelect, profesionalId, tipoConsulta = 'presen
     const horaFin = parseInt(horarioDia.hora_fin.split(':')[0]) * 60 + 
                     parseInt(horarioDia.hora_fin.split(':')[1]);
 
-    console.log('🔧 horaActual (minutos):', horaActual);
-    console.log('🔧 horaInicio (minutos):', horaInicio);
-    console.log('🔧 horaFin (minutos):', horaFin);
-
     const esValido = horaActual >= horaInicio && horaActual < horaFin;
-    console.log('🔧 Es horario válido:', esValido);
 
     return esValido;
   };
@@ -412,17 +379,14 @@ const CalendarioTurnos = ({ onTurnoSelect, profesionalId, tipoConsulta = 'presen
         selectConstraint="businessHours"
         slotEventOverlap={false}
         businessHours={(() => {
-          console.log('🔧 CALENDAR CONFIG - horariosProfesional:', horariosProfesional);
           const businessHours = horariosProfesional?.map(h => {
             const dayNumber = getDayNumber(h.dia_semana);
-            console.log(`🔧 CALENDAR CONFIG - Día: ${h.dia_semana}, DayNumber: ${dayNumber}, Horario: ${h.hora_inicio}-${h.hora_fin}`);
             return {
               daysOfWeek: [dayNumber],
               startTime: h.hora_inicio,
               endTime: h.hora_fin
             };
           }) || [];
-          console.log('🔧 CALENDAR CONFIG - businessHours final:', businessHours);
           return businessHours;
         })()}
         height="auto"

@@ -3,7 +3,14 @@ const pool = require('../db');
 const disponibilidadUtils = {
     validarDisponibilidad: async (idProfesional, fecha, horaInicio, horaFin) => {
         try {
-            const diaSemana = new Date(fecha).toLocaleDateString('es-ES', { weekday: 'long' }).toLowerCase();
+            // Obtener día de la semana y normalizarlo (sin acentos)
+            const diaSemanaCompleto = new Date(fecha).toLocaleDateString('es-ES', { weekday: 'long' }).toLowerCase();
+            const diaSemana = diaSemanaCompleto
+                .replace('á', 'a')
+                .replace('é', 'e')
+                .replace('í', 'i')
+                .replace('ó', 'o')
+                .replace('ú', 'u');
             
             // 1. Verificar disponibilidad regular del profesional
             const disponibilidadQuery = await pool.query(
@@ -50,8 +57,8 @@ const disponibilidadUtils = {
                  AND fecha = $2 
                  AND estado != 'cancelado'
                  AND (
-                     (hora_inicio <= $3 AND hora_fin > $3) OR
-                     (hora_inicio < $4 AND hora_fin >= $4) OR
+                     (hora_inicio < $3 AND hora_fin > $3) OR
+                     (hora_inicio < $4 AND hora_fin > $4) OR
                      (hora_inicio >= $3 AND hora_fin <= $4)
                  )`,
                 [idProfesional, fecha, horaInicio, horaFin]

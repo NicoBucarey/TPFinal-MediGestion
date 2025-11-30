@@ -64,6 +64,9 @@ const TurnoModel = {
           t.hora_inicio,
           t.hora_fin,
           t.estado,
+          t.tipo,
+          t.link_reunion,
+          t.plataforma,
           p.id_paciente,
           u.nombre as paciente_nombre,
           u.apellido as paciente_apellido
