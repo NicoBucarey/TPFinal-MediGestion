@@ -24,18 +24,65 @@ const DashboardPaciente = () => {
 
   const cargarDatos = async () => {
     try {
-      // TODO: Implementar endpoints en backend
-      // const token = localStorage.getItem('token');
-      // const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+      const token = localStorage.getItem('token');
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
       
+      if (!token || !user?.id) {
+        setLoading(false);
+        return;
+      }
+
+      // Cargar estadísticas del paciente
+      const [turnosRes, seguimientosRes, documentosRes] = await Promise.all([
+        // Turnos del paciente
+        axios.get(`${API_URL}/turnos/paciente/${user.id}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        }).catch(() => ({ data: [] })),
+        
+        // Seguimientos activos
+        axios.get(`${API_URL}/seguimiento/paciente/${user.id}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        }).catch(() => ({ data: [] })),
+        
+        // Documentos (estimado, ajustar según tu endpoint)
+        axios.get(`${API_URL}/clinica/paciente/${user.id}/documentos`, {
+          headers: { Authorization: `Bearer ${token}` }
+        }).catch(() => ({ data: [] }))
+      ]);
+
+      // Calcular estadísticas
+      const turnos = turnosRes.data || [];
+      const seguimientos = seguimientosRes.data || [];
+      const documentos = documentosRes.data || [];
+
+      // Próximos turnos (los primeros 3)
+      const proximosTurnos = turnos
+        .filter(turno => new Date(turno.fecha) >= new Date())
+        .slice(0, 3);
+
+      // Consultas realizadas (turnos completados)
+      const consultasRealizadas = turnos.filter(turno => turno.estado === 'completado').length;
+
+      // Seguimientos activos
+      const seguimientosActivos = seguimientos.filter(seg => seg.estado === 'pendiente' || seg.estado === 'en_curso').length;
+
+      setEstadisticas({
+        consultasRealizadas,
+        documentosCompartidos: documentos.length,
+        seguimientosActivos
+      });
+
+      setProximosTurnos(proximosTurnos);
+      
+    } catch (error) {
+      console.error('Error al cargar datos:', error);
+      // Valores por defecto en caso de error
       setEstadisticas({
         consultasRealizadas: 0,
         documentosCompartidos: 0,
         seguimientosActivos: 0
       });
       setProximosTurnos([]);
-    } catch (error) {
-      console.error('Error al cargar datos:', error);
     } finally {
       setLoading(false);
     }
@@ -97,7 +144,7 @@ const DashboardPaciente = () => {
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">
-          Bienvenido/a, {user?.nombre}
+          Bienvenido, {user?.nombre} {user?.apellido}
         </h1>
         <p className="mt-2 text-gray-600">
           {new Date().toLocaleDateString('es-ES', { 

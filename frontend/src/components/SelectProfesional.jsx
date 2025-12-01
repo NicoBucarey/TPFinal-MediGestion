@@ -53,7 +53,7 @@ const SelectProfesional = ({ value, onChange, className = '' }) => {
     );
   }
 
-  const getFullName = (profesional) => `${profesional.nombre} ${profesional.apellido} - ${profesional.especialidad}`;
+  const getFullName = (profesional) => `${profesional.nombre} ${profesional.apellido} - ${profesional.profesion} - ${profesional.especialidad}`;
 
   return (
     <select
@@ -65,7 +65,7 @@ const SelectProfesional = ({ value, onChange, className = '' }) => {
       <option value="">Seleccione un profesional</option>
       {profesionales.map(prof => (
         <option key={prof.id_usuario} value={prof.id_usuario}>
-          {prof.nombre} {prof.apellido} - {prof.especialidad}
+          {prof.nombre} {prof.apellido} - {prof.profesion} - {prof.especialidad}
         </option>
       ))}
     </select>

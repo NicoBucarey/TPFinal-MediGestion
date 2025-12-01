@@ -87,7 +87,7 @@ const DashboardSecretario = () => {
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">
-          Bienvenido/a, {user?.nombre} {user?.apellido}
+          Bienvenido, {user?.nombre} {user?.apellido}
         </h1>
         <p className="mt-2 text-gray-600">
           {new Date().toLocaleDateString('es-ES', { 
