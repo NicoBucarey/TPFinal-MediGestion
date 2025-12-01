@@ -220,21 +220,21 @@ ${linkReunion}
 
 Hola ${paciente.nombre}!
 
-El Dr. ${profesional.nombre} ${profesional.apellido} ha programado un seguimiento para ti:
+El Dr. ${profesional.nombre} ${profesional.apellido} ha programado un seguimiento médico para ti.
 
 📅 Fecha de inicio: ${fechaInicio}
 🔄 Frecuencia: ${frecuenciaTexto[seguimiento.frecuencia_tipo] || seguimiento.frecuencia_tipo}
 ${seguimiento.fecha_fin ? `📅 Hasta: ${new Date(seguimiento.fecha_fin).toLocaleDateString('es-AR')}` : ''}
 
-🔗 *Completa tu seguimiento aquí:*
-${process.env.FRONTEND_URL || 'http://localhost:5173'}/dashboard/paciente/seguimientos
+📱 *CÓMO COMPLETAR TU SEGUIMIENTO:*
 
-📝 *Instrucciones:*
-• Revisa las preguntas periódicamente
-• Responde con honestidad
-• Contacta a tu profesional si tenés dudas
+*Paso 1:* Ingresa a: medigestion
+*Paso 2:* Haz clic en "Iniciar Sesión"
+*Paso 3:* Usa tu email y contraseña
+*Paso 4:* Ve a la sección "Mis Seguimientos"
+*Paso 5:* Completa las preguntas del seguimiento
 
-¡Tu salud es importante!`;
+¡Tu salud es importante! `;
   }
 }
 

@@ -236,13 +236,12 @@ const Seguimientos = () => {
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Tipo</th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Estado</th>
                   <th className="px-6 py-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Respuestas</th>
-                  <th className="px-6 py-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Acciones</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-100">
                 {loading ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-12 text-center">
+                    <td colSpan={6} className="px-6 py-12 text-center">
                       <div className="flex items-center justify-center space-x-3">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#00796B]"></div>
                         <span className="text-gray-500 font-medium">Cargando seguimientos...</span>
@@ -251,7 +250,7 @@ const Seguimientos = () => {
                   </tr>
                 ) : seguimientos.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-12 text-center">
+                    <td colSpan={6} className="px-6 py-12 text-center">
                       <div className="flex flex-col items-center">
                         <ClipboardDocumentListIcon className="w-16 h-16 text-gray-300 mb-4" />
                         <p className="text-gray-500 font-medium">No hay seguimientos</p>
@@ -302,14 +301,6 @@ const Seguimientos = () => {
                           <ChatBubbleBottomCenterTextIcon className="w-4 h-4" />
                           Ver
                         </button>
-                      </td>
-                      <td className="px-6 py-4 text-center">
-                        <Link
-                          to={`/dashboard/profesional/seguimiento/${s.id_seguimiento}`}
-                          className="inline-flex items-center px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium transition-colors duration-150"
-                        >
-                          Ver detalle
-                        </Link>
                       </td>
                     </tr>
                   ))

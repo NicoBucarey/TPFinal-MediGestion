@@ -60,7 +60,7 @@ const NotaClinica = () => {
         // Si el turno está confirmado, automáticamente cambiarlo a "en_curso"
         if (turnoData.estado === 'confirmado') {
           try {
-            await axios.patch(`${API}/turnos/${turnoId}/estado`, 
+            await axios.put(`${API}/turnos/${turnoId}/estado`, 
               { estado: 'en_curso' },
               { headers: { Authorization: `Bearer ${token}` } }
             );
@@ -106,17 +106,17 @@ const NotaClinica = () => {
 
       // Automáticamente cambiar el turno a "completado" después de guardar la nota
       try {
-        await axios.patch(`${API}/turnos/${turnoId}/estado`, 
+        await axios.put(`${API}/turnos/${turnoId}/estado`, 
           { estado: 'completado' },
           { headers: { Authorization: `Bearer ${token}` } }
         );
-        toast.success('Nota guardada y turno completado');
+        toast.success('Nota clínica guardada exitosamente y turno completado');
       } catch (error) {
         console.error('Error al completar turno:', error);
-        toast.success('Nota guardada (error al completar turno automáticamente)');
+        toast.success('Nota clínica guardada exitosamente (no se pudo completar turno automáticamente)');
       }
 
-      navigate('/dashboard/profesional/mis-turnos');
+      navigate('/dashboard/profesional/turnos');
     } catch (e) {
       toast.error(e.response?.data?.message || 'Error al guardar la nota');
     } finally {
@@ -135,29 +135,29 @@ const NotaClinica = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 py-12 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 py-6 px-4">
       <div className="max-w-7xl mx-auto">
         {/* Header mejorado */}
-        <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center w-24 h-24 bg-gradient-to-br from-[#00796B] to-[#004D40] rounded-3xl shadow-xl mb-6">
-            <ClipboardDocumentListIcon className="w-12 h-12 text-white" />
+        <div className="text-center mb-6">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-[#00796B] to-[#004D40] rounded-2xl shadow-lg mb-4">
+            <ClipboardDocumentListIcon className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-4xl font-bold text-gray-900 mb-3">Nota clínica</h1>
-          <p className="text-lg text-gray-600 max-w-md mx-auto">Registra la atención y consulta el historial clínico del paciente</p>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Nota clínica</h1>
+          <p className="text-sm text-gray-600 max-w-md mx-auto">Registra la atención y consulta el historial clínico del paciente</p>
         </div>
 
         {/* Tarjeta del paciente mejorada */}
-        <div className="bg-gradient-to-r from-white to-gray-50 rounded-3xl shadow-lg border border-gray-100 p-8 mb-8">
+        <div className="bg-gradient-to-r from-white to-gray-50 rounded-2xl shadow-lg border border-gray-100 p-4 mb-6">
           <div className="text-center">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full mb-4">
-              <span className="text-2xl text-white font-bold">
+            <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full mb-3">
+              <span className="text-lg text-white font-bold">
                 {turno?.pac_nombre ? `${turno.pac_nombre.charAt(0)}${turno.pac_apellido?.charAt(0) || ''}` : '👤'}
               </span>
             </div>
-            <h2 className="text-3xl font-bold text-gray-900 mb-2">
+            <h2 className="text-xl font-bold text-gray-900 mb-2">
               {turno?.pac_nombre ? `${turno.pac_nombre} ${turno.pac_apellido}` : 'Paciente no especificado'}
             </h2>
-            <div className="inline-flex items-center gap-6 text-gray-600 bg-white rounded-full px-6 py-3 shadow-sm">
+            <div className="inline-flex items-center gap-4 text-gray-600 bg-white rounded-full px-4 py-2 shadow-sm text-sm">
               <div className="flex items-center gap-2">
                 <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
                 <span className="font-medium">
@@ -194,23 +194,23 @@ const NotaClinica = () => {
         )}
 
         {/* Layout en dos columnas mejorado */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Columna izquierda: Formulario de nueva nota */}
-          <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
-            <div className="bg-gradient-to-r from-[#00796B] to-[#004D40] p-6">
-              <h3 className="text-xl font-bold text-white flex items-center gap-3">
-                <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
-                  <ClipboardDocumentListIcon className="w-5 h-5 text-white" />
+          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+            <div className="bg-gradient-to-r from-[#00796B] to-[#004D40] p-4">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <div className="w-6 h-6 bg-white/20 rounded-lg flex items-center justify-center">
+                  <ClipboardDocumentListIcon className="w-4 h-4 text-white" />
                 </div>
                 Nueva nota clínica
               </h3>
             </div>
-            <div className="p-6">
-              <form onSubmit={onSubmit} className="space-y-6">
+            <div className="p-4">
+              <form onSubmit={onSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-3">Nota clínica</label>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">Nota clínica</label>
                   <textarea
-                    className="w-full min-h-[200px] rounded-xl border-2 border-gray-200 px-4 py-4 focus:outline-none focus:ring-2 focus:ring-[#00796B] focus:border-transparent disabled:bg-gray-100 transition-all duration-200"
+                    className="w-full min-h-[150px] rounded-lg border-2 border-gray-200 px-3 py-3 focus:outline-none focus:ring-2 focus:ring-[#00796B] focus:border-transparent disabled:bg-gray-100 transition-all duration-200 text-sm"
                     value={nota}
                     onChange={(e) => setNota(e.target.value)}
                     placeholder="Escribe los detalles de la consulta, hallazgos, indicaciones..."
@@ -219,11 +219,11 @@ const NotaClinica = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-3">Adjuntar documentos</label>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">Adjuntar documentos</label>
                   <div className="flex items-center justify-center w-full">
-                    <label className="w-full flex flex-col items-center px-6 py-8 bg-gradient-to-br from-gray-50 to-gray-100 text-[#00796B] rounded-xl border-2 border-dashed border-[#00796B]/40 cursor-pointer hover:from-[#00796B]/5 hover:to-[#00796B]/10 transition-all duration-200">
-                      <DocumentArrowUpIcon className="w-10 h-10 mb-3" />
-                      <span className="text-sm font-medium">Sube PDFs o imágenes</span>
+                    <label className="w-full flex flex-col items-center px-4 py-4 bg-gradient-to-br from-gray-50 to-gray-100 text-[#00796B] rounded-lg border-2 border-dashed border-[#00796B]/40 cursor-pointer hover:from-[#00796B]/5 hover:to-[#00796B]/10 transition-all duration-200">
+                      <DocumentArrowUpIcon className="w-6 h-6 mb-2" />
+                      <span className="text-xs font-medium">Sube PDFs o imágenes</span>
                       <span className="text-xs text-gray-500 mt-1">(máximo 5 archivos)</span>
                       <input
                         type="file"
@@ -246,11 +246,11 @@ const NotaClinica = () => {
                   )}
                 </div>
 
-                <div className="pt-4">
+                <div className="pt-3">
                   <button
                     type="submit"
                     disabled={saving || !canRegister}
-                    className="w-full py-4 rounded-xl bg-gradient-to-r from-[#00796B] to-[#004D40] hover:from-[#00695c] hover:to-[#00251a] text-white font-bold shadow-lg disabled:opacity-60 transition-all duration-200 transform hover:scale-[1.02]"
+                    className="w-full py-3 rounded-lg bg-gradient-to-r from-[#00796B] to-[#004D40] hover:from-[#00695c] hover:to-[#00251a] text-white font-bold shadow-lg disabled:opacity-60 transition-all duration-200 transform hover:scale-[1.02] text-sm"
                   >
                     {saving ? '🔄 Guardando...' : '💾 Guardar nota y completar turno'}
                   </button>
@@ -260,16 +260,16 @@ const NotaClinica = () => {
           </div>
 
           {/* Columna derecha: Historial de notas previas */}
-          <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
-            <div className="bg-gradient-to-r from-purple-600 to-blue-600 p-6">
-              <h3 className="text-xl font-bold text-white flex items-center gap-3">
-                <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
-                  <span className="text-sm">📋</span>
+          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+            <div className="bg-gradient-to-r from-purple-600 to-blue-600 p-4">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <div className="w-6 h-6 bg-white/20 rounded-lg flex items-center justify-center">
+                  <span className="text-xs">📋</span>
                 </div>
                 Historial clínico
               </h3>
             </div>
-            <div className="p-6">
+            <div className="p-4">
             
             {loadingHistorial ? (
               <div className="space-y-4">
@@ -281,15 +281,15 @@ const NotaClinica = () => {
                 ))}
               </div>
             ) : notasPrevias.length === 0 ? (
-              <div className="text-center py-12">
-                <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <span className="text-3xl">📝</span>
+              <div className="text-center py-8">
+                <div className="w-12 h-12 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <span className="text-xl">📝</span>
                 </div>
-                <h4 className="text-lg font-semibold text-gray-600 mb-2">Sin historial previo</h4>
-                <p className="text-gray-500">Este será el primer registro clínico</p>
+                <h4 className="text-base font-semibold text-gray-600 mb-1">Sin historial previo</h4>
+                <p className="text-gray-500 text-sm">Este será el primer registro clínico</p>
               </div>
             ) : (
-              <div className="max-h-[600px] overflow-y-auto space-y-4 pr-2">
+              <div className="max-h-[400px] overflow-y-auto space-y-3 pr-2">
                 {notasPrevias.map((notaPrevia, index) => {
                   // Formatear fecha correctamente
                   const formatearFechaHistorial = (fecha) => {

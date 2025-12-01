@@ -19,22 +19,79 @@ const DashboardProfesional = () => {
 
   useEffect(() => {
     cargarDatos();
-  }, []);
+  }, [user]);
 
   const cargarDatos = async () => {
     try {
-      // TODO: Implementar endpoints en backend
-      // const token = localStorage.getItem('token');
-      // const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+      const token = localStorage.getItem('token');
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
       
+      if (!user?.id) {
+        console.log('No hay usuario logueado');
+        return;
+      }
+
+      // Obtener turnos del profesional para el mes actual
+      const hoy = new Date();
+      const inicioMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1).toISOString().split('T')[0];
+      const finMes = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0).toISOString().split('T')[0];
+      const hoySolo = hoy.toISOString().split('T')[0];
+
+      console.log('Cargando datos para profesional:', user.id);
+      console.log('Período:', inicioMes, 'hasta', finMes);
+
+      // Obtener todos los turnos del mes
+      const responsesMes = await axios.get(`${API_URL}/turnos/profesional/${user.id}`, {
+        params: { desde: inicioMes, hasta: finMes },
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      // Obtener turnos del día de hoy
+      const responsesHoy = await axios.get(`${API_URL}/turnos/profesional/${user.id}`, {
+        params: { desde: hoySolo, hasta: hoySolo },
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      const turnosMes = responsesMes.data || [];
+      const turnosDelDia = (responsesHoy.data || []).sort((a, b) => {
+        // Ordenar por hora_inicio
+        return a.hora_inicio.localeCompare(b.hora_inicio);
+      });
+
+      console.log('Turnos del mes:', turnosMes.length);
+      console.log('Turnos de hoy:', turnosDelDia.length);
+
+      // Calcular estadísticas
+      const pacientesUnicos = new Set(turnosMes.map(t => t.id_paciente)).size;
+      
+      // Obtener estadísticas de seguimientos si existe el endpoint
+      let seguimientosPendientes = 0;
+      try {
+        const responseSeguimientos = await axios.get(`${API_URL}/seguimiento/profesional/${user.id}/estadisticas`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        seguimientosPendientes = responseSeguimientos.data?.resumen?.pendiente || 0;
+      } catch (error) {
+        console.log('No se pudieron cargar seguimientos:', error.response?.status);
+      }
+      
+      setEstadisticas({
+        turnosMes: turnosMes.length,
+        totalPacientes: pacientesUnicos,
+        seguimientosPendientes
+      });
+      
+      setTurnosHoy(turnosDelDia);
+
+    } catch (error) {
+      console.error('Error al cargar datos:', error);
+      // En caso de error, mantener valores en 0
       setEstadisticas({
         turnosMes: 0,
         totalPacientes: 0,
         seguimientosPendientes: 0
       });
       setTurnosHoy([]);
-    } catch (error) {
-      console.error('Error al cargar datos:', error);
     } finally {
       setLoading(false);
     }
@@ -210,19 +267,23 @@ const DashboardProfesional = () => {
             {turnosHoy.map((turno) => (
               <div key={turno.id_turno} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
                 <div className="flex items-center space-x-4">
-                  <div className="bg-primary/10 p-3 rounded-lg">
-                    <ClockIcon className="w-6 h-6 text-primary" />
+                  <div className="bg-blue-500/10 p-3 rounded-lg">
+                    <ClockIcon className="w-6 h-6 text-blue-500" />
                   </div>
                   <div>
                     <p className="font-semibold text-gray-900">
-                      {turno.hora_inicio} - {turno.paciente_nombre} {turno.paciente_apellido}
+                      {turno.hora_inicio} - {turno.pac_nombre} {turno.pac_apellido}
                     </p>
-                    <p className="text-sm text-gray-600">{turno.motivo_consulta || 'Consulta general'}</p>
+                    <p className="text-sm text-gray-600">
+                      {turno.motivo_consulta || 'Consulta general'} 
+                      {turno.tipo && <span className="ml-2 text-blue-600">({turno.tipo === 'teleconsulta' ? '🎥 Teleconsulta' : '👤 Presencial'})</span>}
+                    </p>
+                    <p className="text-xs text-gray-500">Estado: {turno.estado}</p>
                   </div>
                 </div>
                 <Link
                   to={`/dashboard/profesional/nota/${turno.id_turno}`}
-                  className="text-primary hover:text-primary-dark font-medium text-sm"
+                  className="text-blue-500 hover:text-blue-600 font-medium text-sm px-4 py-2 rounded-lg border border-blue-200 hover:bg-blue-50 transition-colors"
                 >
                   Ver detalle →
                 </Link>
