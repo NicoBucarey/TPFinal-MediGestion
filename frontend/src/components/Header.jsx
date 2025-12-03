@@ -9,26 +9,6 @@ const Header = ({ className = '' }) => {
   const navigate = useNavigate();
   const [isVisible, setIsVisible] = useState(true);
 
-  // Función para obtener la ruta del dashboard según el rol
-  const getDashboardRoute = () => {
-    if (!isAuthenticated || !user?.rol) {
-      return '/';
-    }
-    
-    switch (user.rol.toLowerCase()) {
-      case 'admin':
-        return '/dashboard/admin';
-      case 'profesional':
-        return '/dashboard/profesional';
-      case 'secretario':
-        return '/dashboard/secretario';
-      case 'paciente':
-        return '/dashboard/paciente';
-      default:
-        return '/';
-    }
-  };
-
   useEffect(() => {
     const handleScroll = () => {
       // Mostrar header solo cuando estamos en el tope de la página
@@ -43,7 +23,7 @@ const Header = ({ className = '' }) => {
     <header className={`${className} transition-opacity duration-300 ${isVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
       <nav className="h-full px-4">
         <div className="flex items-center justify-between h-full">
-          <Link to={getDashboardRoute()} className="flex items-center" aria-label="Ir al dashboard">
+          <Link to="/" className="flex items-center" aria-label="Ir al inicio">
           {/* mobile: medium, md+: 8x size (~448px) */}
           <img src="/images/logotipo.png" alt="MiConsultorio" className="w-20 h-20 md:w-[180px] md:h-[180px] object-contain" />
           </Link>
