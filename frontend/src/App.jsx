@@ -35,6 +35,7 @@ import SolicitarTeleconsulta from './pages/paciente/SolicitarTeleconsulta';
 import MisTurnosPaciente from './pages/paciente/MisTurnosPaciente';
 import MisDocumentos from './pages/paciente/MisDocumentos';
 import MisSeguimientos from './pages/paciente/MisSeguimientos';
+import SeguimientoPublico from './pages/SeguimientoPublico';
 import Perfil from './pages/Perfil';
 import ProtectedRoute from './components/ProtectedRoute';
 import useAuth from './hooks/useAuth';
@@ -118,6 +119,9 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
         </Route>
+
+        {/* Ruta pública para seguimientos (sin autenticación) */}
+        <Route path="/seguimiento/:id" element={<SeguimientoPublico />} />
 
         {/* Rutas protegidas */}
         <Route path="/dashboard" element={

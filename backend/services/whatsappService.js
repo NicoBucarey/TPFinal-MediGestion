@@ -216,6 +216,10 @@ ${linkReunion}
       'mensual': 'mensual'
     };
 
+    // URL del seguimiento público
+    const baseUrl = process.env.FRONTEND_URL || 'https://sistema.medigestion.app';
+    const enlaceSeguimiento = `${baseUrl}/seguimiento/${seguimiento.id_seguimiento}`;
+
     return `📋 *Seguimiento Post-Consulta - MediGestion*
 
 Hola ${paciente.nombre}!
@@ -226,15 +230,12 @@ El Dr. ${profesional.nombre} ${profesional.apellido} ha programado un seguimient
 🔄 Frecuencia: ${frecuenciaTexto[seguimiento.frecuencia_tipo] || seguimiento.frecuencia_tipo}
 ${seguimiento.fecha_fin ? `📅 Hasta: ${new Date(seguimiento.fecha_fin).toLocaleDateString('es-AR')}` : ''}
 
-📱 *CÓMO COMPLETAR TU SEGUIMIENTO:*
+📱 *COMPLETÁ TU SEGUIMIENTO AQUÍ:*
+${enlaceSeguimiento}
 
-*Paso 1:* Ingresa a: medigestion
-*Paso 2:* Haz clic en "Iniciar Sesión"
-*Paso 3:* Usa tu email y contraseña
-*Paso 4:* Ve a la sección "Mis Seguimientos"
-*Paso 5:* Completa las preguntas del seguimiento
+*¡Es muy simple!* Solo haz clic en el enlace y responde las preguntas de tu profesional.
 
-¡Tu salud es importante! `;
+¡Tu salud es importante!`;
   }
 }
 

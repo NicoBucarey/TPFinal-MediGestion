@@ -32,6 +32,11 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.post('/api/auth/login', authController.login);
 app.post('/api/auth/register', authController.registerPatient);
 
+// Rutas públicas para seguimientos (sin autenticación)
+const SeguimientoController = require('./controllers/seguimientoController');
+app.get('/api/seguimiento/publico/:id', SeguimientoController.obtenerSeguimientoPublico);
+app.post('/api/seguimiento/:id/respuesta', SeguimientoController.guardarRespuestaPublica);
+
 // Ruta de verificación de token
 app.get('/api/auth/verify', authMiddleware, authController.verify);
 

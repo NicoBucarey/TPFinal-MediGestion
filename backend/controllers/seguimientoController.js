@@ -450,4 +450,214 @@ SeguimientoController.obtenerEstadisticasProfesional = async (req, res) => {
   }
 };
 
+// ========== MÉTODOS PÚBLICOS (SIN AUTENTICACIÓN) ==========
+
+// GET /api/seguimiento/publico/:id - Obtener seguimiento público
+SeguimientoController.obtenerSeguimientoPublico = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    // Obtener seguimiento con datos del paciente y profesional
+    const result = await pool.query(
+      `SELECT 
+        s.*,
+        up.nombre as paciente_nombre,
+        up.apellido as paciente_apellido,
+        upr.nombre as profesional_nombre,
+        upr.apellido as profesional_apellido,
+        prof.profesion,
+        prof.especialidad
+       FROM seguimiento s
+       JOIN usuario up ON up.id_usuario = s.id_paciente
+       JOIN usuario upr ON upr.id_usuario = s.id_profesional
+       JOIN profesional prof ON prof.id_profesional = s.id_profesional
+       WHERE s.id_seguimiento = $1 AND s.estado != 'cancelado'`,
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'Seguimiento no encontrado o no disponible' });
+    }
+
+    const seguimiento = result.rows[0];
+
+    // Obtener preguntas personalizadas
+    const preguntasResult = await pool.query(
+      `SELECT 
+        id_pregunta,
+        texto_pregunta,
+        tipo_respuesta,
+        opciones,
+        obligatoria,
+        orden_pregunta
+       FROM pregunta_seguimiento
+       WHERE id_seguimiento = $1
+       ORDER BY orden_pregunta ASC, id_pregunta ASC`,
+      [id]
+    );
+
+    // Respuesta completa con el mismo formato que el sistema autenticado
+    res.json({
+      seguimiento: {
+        id: seguimiento.id_seguimiento,
+        fechaInicio: seguimiento.fecha_inicio,
+        fechaFin: seguimiento.fecha_fin,
+        frecuenciaTipo: seguimiento.frecuencia_tipo,
+        estado: seguimiento.estado,
+        instrucciones: seguimiento.instrucciones,
+        tipo_seguimiento: seguimiento.tipo_seguimiento,
+        paciente: {
+          nombre: seguimiento.paciente_nombre,
+          apellido: seguimiento.paciente_apellido
+        },
+        profesional: {
+          nombre: seguimiento.profesional_nombre,
+          apellido: seguimiento.profesional_apellido,
+          profesion: seguimiento.profesion,
+          especialidad: seguimiento.especialidad
+        }
+      },
+      preguntas: preguntasResult.rows
+    });
+  } catch (error) {
+    console.error('Error obtenerSeguimientoPublico:', error);
+    res.status(500).json({ message: 'Error al obtener seguimiento público' });
+  }
+};
+
+// POST /api/seguimiento/:id/respuesta - Guardar respuesta pública
+SeguimientoController.guardarRespuestaPublica = async (req, res) => {
+  const { id } = req.params;
+  const { respuestas } = req.body;
+
+  try {
+    // Verificar que el seguimiento existe y no está cancelado
+    const seguimientoResult = await pool.query(
+      'SELECT * FROM seguimiento WHERE id_seguimiento = $1 AND estado != $2',
+      [id, 'cancelado']
+    );
+
+    if (seguimientoResult.rows.length === 0) {
+      return res.status(404).json({ message: 'Seguimiento no encontrado o no disponible' });
+    }
+
+    const seguimiento = seguimientoResult.rows[0];
+
+    // Verificar que no esté ya completado
+    if (seguimiento.estado === 'completado') {
+      return res.status(400).json({ message: 'Este seguimiento ya fue completado' });
+    }
+
+    // Obtener preguntas para determinar el formato
+    const preguntasResult = await pool.query(
+      'SELECT * FROM pregunta_seguimiento WHERE id_seguimiento = $1',
+      [id]
+    );
+
+    if (preguntasResult.rows.length > 0) {
+      // USAR LA MISMA LÓGICA QUE EL SISTEMA AUTENTICADO
+      // Crear registro en respuesta_seguimiento (tabla principal)
+      const nuevaRespuestaRes = await pool.query(
+        `INSERT INTO respuesta_seguimiento 
+          (id_seguimiento, id_paciente, respuesta, observaciones)
+         VALUES ($1, $2, $3, $4)
+         RETURNING *`,
+        [
+          id,
+          seguimiento.id_paciente,
+          'Respuesta con preguntas personalizadas',
+          null
+        ]
+      );
+
+      const nuevaRespuestaId = nuevaRespuestaRes.rows[0].id_respuesta;
+
+      // Guardar cada respuesta individual en respuesta_pregunta_seguimiento
+      for (const [preguntaId, respuestaTexto] of Object.entries(respuestas)) {
+        if (respuestaTexto && respuestaTexto.trim && respuestaTexto.trim()) {
+          // Obtener información de la pregunta para saber el tipo de respuesta
+          const preguntaInfo = await pool.query(
+            'SELECT tipo_respuesta FROM pregunta_seguimiento WHERE id_pregunta = $1',
+            [preguntaId]
+          );
+
+          if (preguntaInfo.rows.length > 0) {
+            const tipoRespuesta = preguntaInfo.rows[0].tipo_respuesta;
+            let respuestaTextoFinal = null;
+            let respuestaNumerica = null;
+            let respuestaBooleana = null;
+            let respuestaOpcion = null;
+
+            // Asignar la respuesta según el tipo
+            switch (tipoRespuesta) {
+              case 'escala':
+                respuestaNumerica = parseInt(respuestaTexto);
+                break;
+              case 'sino':
+                respuestaBooleana = respuestaTexto.toLowerCase() === 'si' || respuestaTexto === 'true';
+                break;
+              case 'opcion':
+                respuestaOpcion = respuestaTexto;
+                break;
+              case 'texto':
+              default:
+                respuestaTextoFinal = respuestaTexto.trim();
+                break;
+            }
+
+            await pool.query(
+              `INSERT INTO respuesta_pregunta_seguimiento 
+                (id_pregunta, id_respuesta_seguimiento, id_paciente, 
+                 respuesta_texto, respuesta_numerica, respuesta_booleana, respuesta_opcion)
+               VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+              [
+                preguntaId, 
+                nuevaRespuestaId, 
+                seguimiento.id_paciente, 
+                respuestaTextoFinal, 
+                respuestaNumerica, 
+                respuestaBooleana, 
+                respuestaOpcion
+              ]
+            );
+          }
+        }
+      }
+    } else {
+      // Formato viejo para seguimientos sin preguntas personalizadas
+      const nuevaRespuestaRes = await pool.query(
+        `INSERT INTO respuesta_seguimiento 
+          (id_seguimiento, id_paciente, respuesta, observaciones, sintomas_reportados, cumplimiento)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         RETURNING *`,
+        [
+          id,
+          seguimiento.id_paciente,
+          respuestas.respuesta_general || 'Respuesta pública',
+          respuestas.observaciones || null,
+          respuestas.sintomas_reportados || null,
+          respuestas.cumplimiento !== false
+        ]
+      );
+    }
+
+    // Actualizar el estado del seguimiento a 'en_curso'
+    const updateResult = await pool.query(
+      `UPDATE seguimiento 
+       SET estado = 'en_curso', fecha_respuesta = NOW()
+       WHERE id_seguimiento = $1
+       RETURNING *`,
+      [id]
+    );
+
+    res.json({
+      message: 'Respuestas guardadas exitosamente',
+      seguimiento: updateResult.rows[0]
+    });
+  } catch (error) {
+    console.error('Error guardarRespuestaPublica:', error);
+    res.status(500).json({ message: 'Error al guardar las respuestas' });
+  }
+};
+
 module.exports = SeguimientoController;
