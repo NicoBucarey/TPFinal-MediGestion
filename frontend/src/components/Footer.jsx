@@ -133,7 +133,6 @@ export default function Footer({ className = '' }) {
             <p className="text-sm text-white/80">© {new Date().getFullYear()} MediGestión. Todos los derechos reservados.</p>
             <div className="flex items-center gap-6 text-xs text-white/70">
               <Link to="/ubicaciones" className="hover:text-white transition">Sucursales</Link>
-              <Link to="/terminos-privacidad" className="hover:text-white transition">Términos y Privacidad</Link>
             </div>
           </div>
         </div>

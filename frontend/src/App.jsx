@@ -4,7 +4,6 @@ import { Toaster } from 'sonner';
 import MainLayout from './layouts/MainLayout';
 import Home from './pages/Home';
 import Ubicaciones from './pages/Ubicaciones';
-import TerminosPrivacidad from './pages/TerminosPrivacidad';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import Dashboard from './pages/Dashboard';
@@ -114,7 +113,6 @@ function App() {
         <Route path="/" element={<MainLayout />}>
           <Route index element={<Home />} />
           <Route path="/ubicaciones" element={<Ubicaciones />} />
-          <Route path="/terminos-privacidad" element={<TerminosPrivacidad />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
         </Route>
