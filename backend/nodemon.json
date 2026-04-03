@@ -1,0 +1,23 @@
+{
+  "watch": [
+    "server.js",
+    "controllers/**/*.js",
+    "routes/**/*.js",
+    "services/**/*.js",
+    "model/**/*.js",
+    "middleware/**/*.js",
+    "jobs/**/*.js",
+    "utils/**/*.js"
+  ],
+  "ext": "js,json",
+  "ignore": [
+    "uploads/**",
+    "node_modules/**",
+    ".git/**",
+    "**/*.log",
+    "**/.wwebjs*/**",
+    "**/medigestion-whatsapp-auth/**",
+    "../frontend/**"
+  ],
+  "delay": "500"
+}

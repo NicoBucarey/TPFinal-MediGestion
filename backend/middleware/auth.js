@@ -19,7 +19,7 @@ const authMiddleware = async (req, res, next) => {
 // Middleware para verificar roles
 const checkRole = (allowedRoles) => {
   return (req, res, next) => {
-    console.log('Usuario en middleware:', req.user); // Debug
+    // Verificar autenticación
     
     if (!req.user || !req.user.rol) {
       return res.status(403).json({ message: 'Rol de usuario no encontrado' });
@@ -29,8 +29,7 @@ const checkRole = (allowedRoles) => {
     const userRole = req.user.rol.toLowerCase();
     const normalizedAllowedRoles = allowedRoles.map(role => role.toLowerCase());
     
-    console.log('Role del usuario:', userRole); // Debug
-    console.log('Roles permitidos:', normalizedAllowedRoles); // Debug
+    // Verificar autorización de roles
 
     if (!req.user || !normalizedAllowedRoles.includes(userRole)) {
       return res.status(403).json({ 
@@ -43,7 +42,7 @@ const checkRole = (allowedRoles) => {
 
 // Middleware para verificar rol de admin
 const adminMiddleware = (req, res, next) => {
-  console.log('Admin middleware - Usuario:', req.user); // Debug
+  // Verificar permisos de administrador
   
   if (!req.user || !req.user.rol) {
     return res.status(403).json({ message: 'Rol de usuario no encontrado' });

@@ -625,7 +625,7 @@ SeguimientoController.guardarRespuestaPublica = async (req, res) => {
       }
     } else {
       // Formato viejo para seguimientos sin preguntas personalizadas
-      const nuevaRespuestaRes = await pool.query(
+      await pool.query(
         `INSERT INTO respuesta_seguimiento 
           (id_seguimiento, id_paciente, respuesta, observaciones, sintomas_reportados, cumplimiento)
          VALUES ($1, $2, $3, $4, $5, $6)

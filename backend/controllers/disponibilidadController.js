@@ -61,15 +61,6 @@ const DisponibilidadController = {
       );
 
       console.log('Horarios encontrados:', horarios.rows);
-      console.log('🔧 DEBUG Backend - Profesional ID:', id);
-      console.log('🔧 DEBUG Backend - Todos los horarios encontrados:');
-      todosHorarios.rows.forEach(h => {
-        console.log(`🔧   ${h.dia_semana}: ${h.activo ? 'ACTIVO' : 'INACTIVO'} - ${h.hora_inicio} a ${h.hora_fin}`);
-      });
-      console.log('🔧 DEBUG Backend - Horarios activos encontrados:', horarios.rows.length);
-      horarios.rows.forEach(h => {
-        console.log(`🔧   ${h.dia_semana}: ${h.hora_inicio} a ${h.hora_fin}`);
-      });
 
       // Obtener las excepciones (días no disponibles)
       const excepciones = await db.query(
@@ -80,11 +71,7 @@ const DisponibilidadController = {
         [id]
       );
 
-      console.log('🔧 DEBUG Backend - Excepciones encontradas:', excepciones.rows.length);
-      excepciones.rows.forEach(exc => {
-        console.log(`🔧   ${exc.fecha.toISOString().split('T')[0]}: ${exc.tipo}`);
-      });
-
+      
       const horariosDisponibles = horarios.rows.length === 0 ? [
         { dia_semana: 'lunes', hora_inicio: '08:00', hora_fin: '20:00' },
         { dia_semana: 'martes', hora_inicio: '08:00', hora_fin: '20:00' },
@@ -179,7 +166,6 @@ const DisponibilidadController = {
           );
 
           if (configActual.rows.length > 0) {
-            const configOriginal = configActual.rows[0];
             // Solo actualizar el estado activo/inactivo
             for (const [dia, horario] of Object.entries(horarios)) {
               await client.query(

@@ -90,7 +90,7 @@ async function crearTurnoPeriodico(req, res) {
                     horaInicio, 
                     horaFin
                 );
-                if (!disponible) continue; // Saltar fechas no disponibles
+                if (!disponible.disponible) continue; // Saltar fechas no disponibles
 
                 // Crear turno individual
                 const turno = await TurnoModel.crearTurno({
@@ -119,7 +119,6 @@ async function crearTurnoPeriodico(req, res) {
 
             // Enviar mensaje grupal de confirmación
             try {
-                const RecordatorioService = require('../services/recordatorioService');
                 const WhatsAppService = require('../services/whatsappService');
 
                 const pacienteRes = await pool.query(

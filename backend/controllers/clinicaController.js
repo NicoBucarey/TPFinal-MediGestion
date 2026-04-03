@@ -117,7 +117,6 @@ const ClinicaController = {
   // GET /api/clinica/pacientes/:id - Obtener información del paciente
   obtenerPacienteInfo: async (req, res) => {
     const { id } = req.params;
-    const userId = req.user?.id;
     const userRole = req.user?.rol?.toLowerCase();
 
     if (userRole !== 'profesional') {

@@ -1,10 +1,58 @@
 const pool = require('../db');
 
+const parseLocalDate = (dateInput) => {
+    if (dateInput instanceof Date) {
+        return new Date(
+            dateInput.getFullYear(),
+            dateInput.getMonth(),
+            dateInput.getDate(),
+            12,
+            0,
+            0,
+            0
+        );
+    }
+
+    if (typeof dateInput === 'number') {
+        const fromTimestamp = new Date(dateInput);
+        return new Date(
+            fromTimestamp.getFullYear(),
+            fromTimestamp.getMonth(),
+            fromTimestamp.getDate(),
+            12,
+            0,
+            0,
+            0
+        );
+    }
+
+    if (typeof dateInput === 'string') {
+        const [year, month, day] = dateInput.split('-').map(Number);
+        if (!year || !month || !day) {
+            throw new Error(`Fecha inválida: ${dateInput}`);
+        }
+        return new Date(year, month - 1, day, 12, 0, 0, 0);
+    }
+
+    throw new Error(`Formato de fecha no soportado: ${typeof dateInput}`);
+};
+
+const formatLocalDate = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
+
 const disponibilidadUtils = {
     validarDisponibilidad: async (idProfesional, fecha, horaInicio, horaFin) => {
         try {
+            const fechaNormalizada = formatLocalDate(parseLocalDate(fecha));
+
             // Obtener día de la semana y normalizarlo (sin acentos)
-            const diaSemanaCompleto = new Date(fecha).toLocaleDateString('es-ES', { weekday: 'long' }).toLowerCase();
+            const diaSemanaCompleto = parseLocalDate(fechaNormalizada)
+                .toLocaleDateString('es-ES', { weekday: 'long' })
+                .toLowerCase();
             const diaSemana = diaSemanaCompleto
                 .replace('á', 'a')
                 .replace('é', 'e')
@@ -40,7 +88,7 @@ const disponibilidadUtils = {
                      (tipo = 'horario_especial' AND 
                       (hora_inicio > $3 OR hora_fin < $4))
                  )`,
-                [idProfesional, fecha, horaInicio, horaFin]
+                [idProfesional, fechaNormalizada, horaInicio, horaFin]
             );
 
             if (excepcionQuery.rows.length > 0) {
@@ -61,7 +109,7 @@ const disponibilidadUtils = {
                      (hora_inicio < $4 AND hora_fin > $4) OR
                      (hora_inicio >= $3 AND hora_fin <= $4)
                  )`,
-                [idProfesional, fecha, horaInicio, horaFin]
+                [idProfesional, fechaNormalizada, horaInicio, horaFin]
             );
 
             if (turnosQuery.rows.length > 0) {
@@ -127,8 +175,8 @@ const disponibilidadUtils = {
 // Función auxiliar para generar fechas según periodicidad
 function generarFechasPeriodicas(fechaInicio, fechaFin, tipoPeriodicidad, diaSemana) {
     const fechas = [];
-    const inicio = new Date(fechaInicio);
-    const fin = new Date(fechaFin);
+    const inicio = parseLocalDate(fechaInicio);
+    const fin = parseLocalDate(fechaFin);
     
     // Normalizar el nombre del día (quita tildes y pasa a minúsculas)
     function normalizarDia(dia) {
@@ -151,10 +199,10 @@ function generarFechasPeriodicas(fechaInicio, fechaFin, tipoPeriodicidad, diaSem
 
     while (fecha <= fin) {
         if (tipoPeriodicidad === 'libre') {
-            fechas.push(fecha.toISOString().split('T')[0]);
+            fechas.push(formatLocalDate(fecha));
             fecha.setDate(fecha.getDate() + 1);
         } else if (fecha.getDay() === diasSemana[diaSemanaNormalizado]) {
-            fechas.push(fecha.toISOString().split('T')[0]);
+            fechas.push(formatLocalDate(fecha));
             
             switch (tipoPeriodicidad) {
                 case 'semanal':
@@ -176,5 +224,8 @@ function generarFechasPeriodicas(fechaInicio, fechaFin, tipoPeriodicidad, diaSem
     
     return fechas;
 }
+
+// Expuesto para tests unitarios de lógica de periodicidad
+disponibilidadUtils._generarFechasPeriodicas = generarFechasPeriodicas;
 
 module.exports = disponibilidadUtils;

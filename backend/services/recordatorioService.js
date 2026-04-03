@@ -94,19 +94,24 @@ const RecordatorioService = {
                 if (envio.success) {
                     await pool.query(
                         `UPDATE recordatorio 
-                        SET estado = 'enviado' 
-                        WHERE id_recordatorio = $1`,
-                        [recordatorio.rows[0].id_recordatorio]
+                        SET estado = 'enviado',
+                            intentos = $1
+                        WHERE id_recordatorio = $2`,
+                        [envio.intentos || 1, recordatorio.rows[0].id_recordatorio]
                     );
+                    
+                    console.log(`✅ WhatsApp ENVIADO EXITOSAMENTE en ${envio.intentos} intento(s)`);
                 } else {
                     await pool.query(
                         `UPDATE recordatorio 
                         SET estado = 'fallido', 
                             error_mensaje = $1,
-                            intentos = intentos + 1
-                        WHERE id_recordatorio = $2`,
-                        [envio.error, recordatorio.rows[0].id_recordatorio]
+                            intentos = $2
+                        WHERE id_recordatorio = $3`,
+                        [envio.error, envio.intentos || 1, recordatorio.rows[0].id_recordatorio]
                     );
+                    
+                    console.log(`❌ FALLO al enviar WhatsApp después de ${envio.intentos} intento(s): ${envio.error}`);
                 }
 
                 return {

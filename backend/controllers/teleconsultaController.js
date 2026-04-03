@@ -75,8 +75,9 @@ const TeleconsultaController = {
             t.estado,
             u_prof.nombre as profesional_nombre,
             u_prof.apellido as profesional_apellido,
-            u_prof.especialidad as profesional_especialidad
+            p.especialidad as profesional_especialidad
           FROM turno t
+          JOIN profesional p ON t.id_profesional = p.id_profesional
           JOIN usuario u_prof ON t.id_profesional = u_prof.id_usuario
           WHERE t.id_paciente = $1 AND t.tipo = 'teleconsulta'
           ORDER BY t.fecha DESC, t.hora_inicio DESC
@@ -120,9 +121,10 @@ const TeleconsultaController = {
             u_pac.telefono as paciente_telefono,
             u_prof.nombre as profesional_nombre,
             u_prof.apellido as profesional_apellido,
-            u_prof.especialidad as profesional_especialidad
+            p.especialidad as profesional_especialidad
           FROM turno t
           JOIN usuario u_pac ON t.id_paciente = u_pac.id_usuario
+          JOIN profesional p ON t.id_profesional = p.id_profesional
           JOIN usuario u_prof ON t.id_profesional = u_prof.id_usuario
           WHERE t.tipo = 'teleconsulta'
           ORDER BY t.fecha DESC, t.hora_inicio DESC

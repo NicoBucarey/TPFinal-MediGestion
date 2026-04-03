@@ -1,3 +1,5 @@
+const { pool } = require('../../db');
+
 const verifyToken = async (req, res) => {
   try {
     // El middleware auth ya verificó el token, así que si llegamos aquí, el token es válido
@@ -29,3 +31,5 @@ const verifyToken = async (req, res) => {
     res.status(500).json({ message: 'Error en el servidor' });
   }
 };
+
+module.exports = verifyToken;

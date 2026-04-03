@@ -1,0 +1,4 @@
+node_modules/
+uploads/
+.wwebjs_auth/
+.wwebjs_cache/

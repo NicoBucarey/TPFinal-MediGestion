@@ -240,15 +240,9 @@ const TurnoController = {
   // Obtener turnos del día actual para recepción
   obtenerTurnosRecepcionHoy: async (req, res) => {
     try {
-      // Obtener la fecha actual en zona horaria local (Argentina)
+      // Calcular fecha actual
       const ahora = new Date();
-      // Ajustar a zona horaria de Argentina (UTC-3)
-      const fechaLocal = new Date(ahora.getTime() - (ahora.getTimezoneOffset() * 60000));
-      const hoy = fechaLocal.toISOString().split('T')[0];
-      
-      console.log('🔍 [DEBUG] Fecha actual UTC:', ahora.toISOString());
-      console.log('🔍 [DEBUG] Fecha local calculada:', hoy);
-      console.log('🔍 [DEBUG] Timezone offset:', ahora.getTimezoneOffset());
+      const hoy = ahora.toISOString().split('T')[0];
       
       // Consulta simplificada sin especialidad
       const query = `
@@ -275,13 +269,8 @@ const TurnoController = {
         ORDER BY t.hora_inicio ASC
       `;
 
-      console.log('🔍 [DEBUG] Ejecutando query con parámetros:', [hoy]);
-      const result = await pool.query(query, [hoy]);
-      console.log('✅ [DEBUG] Turnos encontrados para hoy:', result.rows.length);
       
-      if (result.rows.length > 0) {
-        console.log('🔍 [DEBUG] Primer turno:', JSON.stringify(result.rows[0], null, 2));
-      }
+      const result = await pool.query(query, [hoy]);
       
       res.json(result.rows);
     } catch (error) {

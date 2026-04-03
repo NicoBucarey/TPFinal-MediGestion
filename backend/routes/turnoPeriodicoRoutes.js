@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const TurnoPeriodicoController = require('../controllers/turnoPeriodicoController');
-const { authMiddleware, checkRole } = require('../middleware/auth');
+const { checkRole } = require('../middleware/auth');
 
 // Rutas para turnos periódicos
 // Todas las rutas usan authMiddleware para asegurar la autenticación

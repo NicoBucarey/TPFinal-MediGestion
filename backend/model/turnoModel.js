@@ -11,6 +11,7 @@ const TurnoModel = {
           t.hora_inicio,
           t.hora_fin,
           t.estado,
+          t.motivo_consulta,
           t.tipo,
           t.link_reunion,
           t.plataforma,
@@ -30,7 +31,6 @@ const TurnoModel = {
         LEFT JOIN usuario up ON p.id_paciente = up.id_usuario
         LEFT JOIN profesional prof ON t.id_profesional = prof.id_profesional
         LEFT JOIN usuario upr ON prof.id_profesional = upr.id_usuario
-        LEFT JOIN especialidad esp ON prof.id_especialidad = esp.id_especialidad
         WHERE t.id_turno = $1
       `;
 

@@ -9,7 +9,42 @@
 cd frontend
 # Medigestion
 
-Sistema de gestión de turnos médicos desarrollado con React y Node.js.
+**Medigestion** es un sistema integral de gestión de turnos y consultas médicas diseñado para optimizar la administración de centros de salud, clínicas y consultorios médicos. La aplicación facilita tanto la gestión administrativa como la experiencia del paciente a través de una plataforma web moderna y eficiente.
+
+## 🏥 Descripción del Proyecto
+
+Medigestion es una aplicación web completa que permite:
+
+### Para Pacientes:
+- **Registro y gestión de perfil personal**: Los pacientes pueden crear y mantener su información personal y médica
+- **Solicitud de turnos online**: Sistema intuitivo para reservar citas médicas según disponibilidad
+- **Gestión de turnos**: Visualizar, reprogramar o cancelar turnos existentes
+- **Historial médico**: Acceso a su historial de consultas y tratamientos
+- **Recordatorios automáticos**: Notificaciones por WhatsApp para recordar citas próximas
+- **Teleconsulta**: Capacidad de realizar consultas virtuales cuando sea apropiado
+
+### Para Profesionales de la Salud:
+- **Agenda digital**: Gestión completa de horarios y disponibilidad
+- **Seguimiento de pacientes**: Sistema de monitoreo post-consulta
+- **Historial clínico**: Acceso completo al historial médico de sus pacientes
+- **Teleconsultas**: Realización de consultas remotas
+- **Gestión de turnos**: Aprobación, modificación y cancelación de citas
+
+### Para Administradores:
+- **Panel de control**: Dashboard administrativo con estadísticas y métricas
+- **Gestión de usuarios**: Administración de pacientes, profesionales y secretarios
+- **Configuración de sucursales**: Manejo de múltiples ubicaciones
+- **Reportes y analytics**: Generación de informes sobre la actividad del centro
+- **Gestión de notificaciones**: Control del sistema de recordatorios y alertas
+
+### Características Técnicas:
+- **Integración con WhatsApp**: Sistema automatizado de notificaciones y recordatorios
+- **Diseño responsive**: Optimizado para dispositivos móviles y de escritorio
+- **Seguridad avanzada**: Autenticación JWT y encriptación de datos sensibles
+- **Base de datos robusta**: PostgreSQL para garantizar integridad y performance
+- **API RESTful**: Arquitectura escalable y mantenible
+
+El sistema está diseñado para mejorar la eficiencia operativa de los centros médicos, reducir los tiempos de espera, minimizar las ausencias a citas y proporcionar una experiencia superior tanto para pacientes como para profesionales de la salud.
 
 ## 📋 Requisitos Previos
 

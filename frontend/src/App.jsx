@@ -1,43 +1,57 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { useEffect } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { Toaster } from 'sonner';
+
+// Layouts y utilidades: siempre presentes, no se lazyifican
 import MainLayout from './layouts/MainLayout';
-import Home from './pages/Home';
-import Ubicaciones from './pages/Ubicaciones';
-import Login from './pages/auth/Login';
-import Register from './pages/auth/Register';
-import Dashboard from './pages/Dashboard';
-import DashboardAdmin from './pages/admin/DashboardAdmin';
-import DashboardProfesional from './pages/profesional/DashboardProfesional';
-import DashboardSecretario from './pages/secretario/DashboardSecretario';
-import RecepcionPage from './pages/recepcion/RecepcionPage';
-import DashboardPaciente from './pages/paciente/DashboardPaciente';
-import Reportes from './pages/admin/Reportes';
-import GestionSucursales from './pages/admin/GestionSucursales';
-import GestionUsuarios from './pages/usuarios/GestionUsuarios';
-import NuevoTurno from './pages/turnos/NuevoTurno';
-import NuevoTurnoPeriodico from './pages/turnos/NuevoTurnoPeriodico';
-import NuevaTeleconsulta from './pages/teleconsultas/NuevaTeleconsulta';
-import GestionDisponibilidad from './pages/disponibilidad/GestionDisponibilidad';
-import NotaClinica from './pages/profesional/NotaClinica';
-import HistorialPaciente from './pages/profesional/HistorialPaciente';
-import DocumentosCompartidos from './pages/profesional/DocumentosCompartidos';
-import HistoriasClinicas from './pages/profesional/HistoriasClinicas';
-import MisTurnos from './pages/profesional/MisTurnos';
-import ProgramarSeguimiento from './pages/profesional/ProgramarSeguimiento';
-import SeleccionarPacienteSeguimiento from './pages/profesional/SeleccionarPacienteSeguimiento';
-import Seguimientos from './pages/profesional/Seguimientos';
-import BuscarProfesional from './pages/paciente/BuscarProfesional';
-import AgendaProfesional from './pages/paciente/AgendaProfesional';
-import SolicitarTurnoPeriodico from './pages/paciente/SolicitarTurnoPeriodico';
-import SolicitarTeleconsulta from './pages/paciente/SolicitarTeleconsulta';
-import MisTurnosPaciente from './pages/paciente/MisTurnosPaciente';
-import MisDocumentos from './pages/paciente/MisDocumentos';
-import MisSeguimientos from './pages/paciente/MisSeguimientos';
-import SeguimientoPublico from './pages/SeguimientoPublico';
-import Perfil from './pages/Perfil';
 import ProtectedRoute from './components/ProtectedRoute';
+import LoadingPage from './components/LoadingPage';
+import ErrorBoundary from './components/ErrorBoundary';
 import useAuth from './hooks/useAuth';
+
+// ---------------------------------------------------------------------------
+// Páginas cargadas de forma lazy: cada una se descarga solo cuando se visita
+// ---------------------------------------------------------------------------
+
+// Públicas
+const Home                         = lazy(() => import('./pages/Home'));
+const Ubicaciones                  = lazy(() => import('./pages/Ubicaciones'));
+const Login                        = lazy(() => import('./pages/auth/Login'));
+const Register                     = lazy(() => import('./pages/auth/Register'));
+const SeguimientoPublico           = lazy(() => import('./features/seguimientos/pages/SeguimientoPublicoPage'));
+
+// Compartidas
+const Dashboard                    = lazy(() => import('./features/dashboard/pages/DashboardPage'));
+const Perfil                       = lazy(() => import('./features/perfil/pages/PerfilPage'));
+
+// Admin
+const Reportes                     = lazy(() => import('./features/admin/pages/ReportesPage'));
+const GestionSucursales            = lazy(() => import('./features/admin/pages/GestionSucursalesPage'));
+const GestionUsuarios              = lazy(() => import('./features/usuarios/pages/GestionUsuariosPage'));
+
+// Secretario
+const RecepcionPage                = lazy(() => import('./features/recepcion/pages/RecepcionPage'));
+const NuevoTurno                   = lazy(() => import('./features/turnos/pages/NuevoTurnoPage'));
+const NuevoTurnoPeriodico          = lazy(() => import('./features/turnos/pages/NuevoTurnoPeriodicoPage'));
+const NuevaTeleconsulta            = lazy(() => import('./features/teleconsultas/pages/NuevaTeleconsultaPage'));
+
+// Profesional
+const GestionDisponibilidad        = lazy(() => import('./features/disponibilidad/pages/GestionDisponibilidadPage'));
+const MisTurnos                    = lazy(() => import('./features/clinica/pages/MisTurnosProfesionalPage'));
+const NotaClinica                  = lazy(() => import('./features/clinica/pages/NotaClinicaPage'));
+const HistorialPaciente            = lazy(() => import('./features/clinica/pages/HistorialPacientePage'));
+const DocumentosCompartidos        = lazy(() => import('./features/documentos/pages/DocumentosCompartidosPage'));
+const HistoriasClinicas            = lazy(() => import('./features/clinica/pages/HistoriasClinicasPage'));
+const Seguimientos                 = lazy(() => import('./features/seguimientos/pages/SeguimientosProfesionalPage'));
+const ProgramarSeguimiento         = lazy(() => import('./features/seguimientos/pages/ProgramarSeguimientoPage'));
+const SeleccionarPacienteSeguimiento = lazy(() => import('./features/seguimientos/pages/SeleccionarPacienteSeguimientoPage'));
+
+// Paciente
+const BuscarProfesional            = lazy(() => import('./features/turnos/pages/BuscarProfesionalPage'));
+const AgendaProfesional            = lazy(() => import('./features/turnos/pages/AgendaProfesionalPage'));
+const SolicitarTurnoPeriodico      = lazy(() => import('./features/turnos/pages/SolicitarTurnoPeriodicoPage'));
+const MisTurnosPaciente            = lazy(() => import('./features/turnos/pages/MisTurnosPacientePage'));
+const MisSeguimientos              = lazy(() => import('./features/seguimientos/pages/MisSeguimientosPage'));
 
 function App() {
   const { checkAuth } = useAuth();
@@ -68,7 +82,7 @@ function App() {
 
         // Secretaría / Turnos
         { re: /^\/dashboard\/secretario$/, title: 'Dashboard' },
-        { re: /^\/dashboard\/turnos\/nuevo$/, title: 'Nuevo turno' },
+        { re: /^\/dashboard\/turnos\/nuevo$/, title: 'Turno simple' },
         { re: /^\/dashboard\/turnos\/periodico\/nuevo$/, title: 'Turno periódico' },
 
         // Profesional
@@ -89,9 +103,7 @@ function App() {
         { re: /^\/dashboard\/paciente\/buscar-profesional$/, title: 'Buscar profesional' },
         { re: /^\/dashboard\/paciente\/agenda\/.+$/, title: 'Agenda' },
         { re: /^\/dashboard\/paciente\/turno-periodico\/.+$/, title: 'Turno periódico' },
-        { re: /^\/dashboard\/paciente\/documentos$/, title: 'Documentos' },
         { re: /^\/dashboard\/paciente\/seguimientos$/, title: 'Mis seguimientos' },
-        { re: /^\/dashboard\/paciente\/historia$/, title: 'Mi historia clínica' },
 
         // Perfil
         { re: /^\/dashboard\/perfil$/, title: 'Mi perfil' },
@@ -102,14 +114,13 @@ function App() {
     }, [location.pathname]);
     return null;
   };
-//me podrias explicar la logica de este codigo? 
-  // Este código es un componente principal de una aplicación React que utiliza React Router para la gestión de rutas.
-  // La función checkAuth se llama en un efecto secundario (useEffect) cuando el componente se monta, lo que sugiere que está verificando el estado de autenticación del usuario. Luego, el componente devuelve una estructura de rutas que define las diferentes páginas y componentes que se renderizan según la URL actual. 
   return (
     <BrowserRouter>
       <TitleManager />
       <Toaster richColors closeButton position="top-right" />
-      <Routes>
+      <ErrorBoundary>
+        <Suspense fallback={<LoadingPage />}>
+          <Routes>
         {/* Rutas públicas */}
         <Route path="/" element={<MainLayout />}>
           <Route index element={<Home />} />
@@ -130,13 +141,13 @@ function App() {
           {/* Dashboard principal */}
           <Route index element={<Dashboard />} />
 
-          {/* Rutas de Admin */}
-          <Route path="admin" element={
-            <ProtectedRoute allowedRoles={['admin']}>
-              <DashboardAdmin />
-            </ProtectedRoute>
-          } />
+          {/* Redirecciones de dashboards antiguos por rol */}
+          <Route path="admin" element={<Navigate to="/dashboard" replace />} />
+          <Route path="profesional" element={<Navigate to="/dashboard" replace />} />
+          <Route path="secretario" element={<Navigate to="/dashboard" replace />} />
+          <Route path="paciente" element={<Navigate to="/dashboard" replace />} />
 
+          {/* Rutas de Admin */}
           <Route path="admin/users" element={
             <ProtectedRoute allowedRoles={['admin']}>
               <GestionUsuarios />
@@ -155,29 +166,9 @@ function App() {
           } />
 
           {/* Rutas de Secretario */}
-          <Route path="secretario" element={
-            <ProtectedRoute allowedRoles={['secretario']}>
-              <DashboardSecretario />
-            </ProtectedRoute>
-          } />
-
           <Route path="recepcion" element={
             <ProtectedRoute allowedRoles={['secretario']}>
               <RecepcionPage />
-            </ProtectedRoute>
-          } />
-
-          {/* Rutas de Profesional */}
-          <Route path="profesional" element={
-            <ProtectedRoute allowedRoles={['profesional']}>
-              <DashboardProfesional />
-            </ProtectedRoute>
-          } />
-
-          {/* Rutas de Paciente */}
-          <Route path="paciente" element={
-            <ProtectedRoute allowedRoles={['paciente']}>
-              <DashboardPaciente />
             </ProtectedRoute>
           } />
 
@@ -197,19 +188,19 @@ function App() {
 
           {/* Rutas de turnos */}
           <Route path="turnos/nuevo" element={
-            <ProtectedRoute allowedRoles={['secretario']}>
+            <ProtectedRoute allowedRoles={['secretario', 'paciente']}>
               <NuevoTurno />
             </ProtectedRoute>
           } />
           
           <Route path="turnos/periodico/nuevo" element={
-            <ProtectedRoute allowedRoles={['secretario']}>
+            <ProtectedRoute allowedRoles={['secretario', 'paciente']}>
               <NuevoTurnoPeriodico />
             </ProtectedRoute>
           } />
 
           <Route path="teleconsultas/nueva" element={
-            <ProtectedRoute allowedRoles={['secretario']}>
+            <ProtectedRoute allowedRoles={['secretario', 'paciente']}>
               <NuevaTeleconsulta />
             </ProtectedRoute>
           } />
@@ -300,16 +291,6 @@ function App() {
               <SolicitarTurnoPeriodico />
             </ProtectedRoute>
           } />
-          <Route path="paciente/teleconsulta" element={
-            <ProtectedRoute allowedRoles={['paciente']}>
-              <SolicitarTeleconsulta />
-            </ProtectedRoute>
-          } />
-          <Route path="paciente/documentos" element={
-            <ProtectedRoute allowedRoles={['paciente']}>
-              <MisDocumentos />
-            </ProtectedRoute>
-          } />
           <Route path="paciente/seguimientos" element={
             <ProtectedRoute allowedRoles={['paciente']}>
               <MisSeguimientos />
@@ -318,8 +299,10 @@ function App() {
         </Route>
 
         {/* Ruta para manejar URLs no existentes */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+          <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Suspense>
+      </ErrorBoundary>
     </BrowserRouter>
   );
       

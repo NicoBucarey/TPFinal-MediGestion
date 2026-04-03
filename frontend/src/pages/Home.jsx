@@ -12,11 +12,6 @@ const Home = () => {
       try {
         const res = await axios.get(`${API_URL}/sucursales/activas`);
         const data = Array.isArray(res.data) ? res.data : [];
-        // Debug mínimo en desarrollo
-        if (import.meta.env.DEV) {
-          // eslint-disable-next-line no-console
-          console.log('Ubicaciones activas recibidas:', data.length);
-        }
         setUbicaciones(data);
       } catch (e) {
         if (import.meta.env.DEV) {

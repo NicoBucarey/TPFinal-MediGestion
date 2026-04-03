@@ -1,0 +1,42 @@
+.fc-non-business {
+  background-color: rgba(117, 117, 117, 0.7) !important;
+}
+.fc-bg-event {
+  opacity: 0.7 !important;
+  background-color: #d32f2f !important;
+  border: 1px solid #b71c1c !important;
+  color: #fff !important;
+  font-weight: bold;
+  font-size: 1.1em;
+  text-shadow: 0 1px 2px #00000033;
+}
+
+.fc-timegrid-event {
+  background-color: #d32f2f !important;
+  border-color: #b71c1c !important;
+  color: #fff !important;
+  font-weight: bold;
+  font-size: 1.1em;
+}
+
+
+.fc-timegrid-slot {
+  height: 30px !important;
+}
+
+/* Oscurecer los días no disponibles */
+.fc-timegrid-col.fc-day-disabled, .fc-timegrid-col.fc-day-unavailable {
+  background-color: #888888 !important;
+}
+
+.fc-timegrid-slot-label {
+  font-size: 0.85em !important;
+}
+
+.fc-event {
+  cursor: not-allowed !important;
+}
+
+.fc-event.fc-bg-event {
+  pointer-events: none;
+}
